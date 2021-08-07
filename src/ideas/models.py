@@ -38,6 +38,7 @@ class Idea(Document):
         ("1mo","1month"),
     )
     id = fields.SequenceField(primary_key=True)
+    user = fields.ReferenceField("User")
     create_date = fields.FloatField(default=lambda : datetime.timestamp(datetime.now()))
     views = fields.IntField(default=1)
     images = fields.ListField(fields.ReferenceField("Image"))

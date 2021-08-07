@@ -16,7 +16,7 @@ from django.contrib.auth.models import (
     _user_has_perm,
 )
 
-from messages.models import Message_box
+from messages.models import Messagebox
 
 class User(Document):
     ROLE_CHOICES=(
@@ -119,7 +119,7 @@ class User(Document):
         user.save()
 
         # create MassageBox
-        message_box = Message_box.objects.create(user = user.id)
+        message_box = Messagebox.objects.create(user = user.id)
         message_box.save()
 
         #creating user plan
