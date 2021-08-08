@@ -2,6 +2,7 @@ import binascii
 from datetime import datetime, date
 from time import mktime
 
+
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -35,6 +36,7 @@ class User(Document):
     )
     username = fields.StringField(max_length=200,unique=True,required=True)
     name = fields.StringField(max_length=50, default='')
+    email = fields.EmailField()
     lastname = fields.StringField(max_length=50, default='')
     biography = fields.StringField()
 
@@ -58,7 +60,7 @@ class User(Document):
 
     #plan user
 
-    plan = fields.ReferenceField("Plan")
+    plan = fields.ReferenceField("Plan", null=True)
 
     #device token for andrioid users
     device_token = fields.StringField()
@@ -105,15 +107,16 @@ class User(Document):
 
     
     @classmethod
-    def create_user(cls, password, phone_number, **kwargs):
+    def create_user(cls, password, phone_number, username, **kwargs):
         """
         Create (and save) a new user with the given username, password and
         email address.
         """
         now = datetime.timestamp(datetime.now())
         role = kwargs.get("role")
+        username = str(kwargs.get("username"))
 
-        user = cls(phone_number=phone_number, joined_date=now, role=role)
+        user = cls(phone_number=phone_number, joined_date=now, role=role,username=username.lower())
 
         user.set_password(password)
         user.save()
@@ -123,7 +126,7 @@ class User(Document):
         message_box.save()
 
         #creating user plan
-        plan = Plan.objects.create(user=user.id, plan_version="0")
+        plan = Plan.objects.create(user=user.id)
         plan.save()
 
         return user
@@ -257,7 +260,6 @@ class UserSystem(Document):
 
 class Plan(Document):
     VERSION_CHOICES = (
-        ("0","normal"),
         ("1","Pro"),
         ("2","Premium"),
     )

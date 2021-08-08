@@ -6,8 +6,7 @@ from datetime import datetime, date
 
 class Image(Document):
     id = fields.SequenceField(primary_key=True)
-    link = fields.StringField()
-    image = fields.ImageField()
+    image = fields.StringField()
     description = fields.StringField()
 
 class Idea(Document):
@@ -18,6 +17,7 @@ class Idea(Document):
         ("A","Area"),
     )
     SIGNAL_CHOICES = (
+        ("N","None"),
         ("S","Short"),
         ("L","Long"),
     )
@@ -56,7 +56,7 @@ class Rate(Document):
     id = fields.SequenceField(primary_key=True)
     rate = fields.FloatField()
     user = fields.ReferenceField("User")
-    rate_date = fields.FloatField(default=lambda : datetime.timestamp(datetime.now()))
+    create_date = fields.FloatField(default=lambda : datetime.timestamp(datetime.now()))
 
     
 
