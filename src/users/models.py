@@ -1,6 +1,8 @@
 import binascii
 from datetime import datetime, date
 from time import mktime
+import uuid
+import mongoengine
 
 
 from django.db import models
@@ -17,7 +19,8 @@ from django.contrib.auth.models import (
     _user_has_perm,
 )
 
-from messages.models import Messagebox
+from directs.models import Messagebox
+
 
 class User(Document):
     ROLE_CHOICES=(
@@ -45,6 +48,7 @@ class User(Document):
     is_active = fields.BooleanField(default=True)
 
     joined_date = fields.FloatField(default=0)
+    
 
     role = fields.StringField(choices=ROLE_CHOICES,default="u")
 
@@ -53,7 +57,9 @@ class User(Document):
 
     followings_cnt = fields.IntField(default=0)
     followers_cnt = fields.IntField(default=0)
+    #refferal code
 
+    referral = fields.StringField(unique=True)
     #Watchlist
 
     watchlist = fields.ListField(fields.StringField())
@@ -116,7 +122,10 @@ class User(Document):
         role = kwargs.get("role")
         username = str(kwargs.get("username"))
 
-        user = cls(phone_number=phone_number, joined_date=now, role=role,username=username.lower())
+        #create referral
+        refer = str(uuid.uuid4())[:5]
+
+        user = cls(phone_number=phone_number, joined_date=now, role=role,username=username.lower(),referral=refer)
 
         user.set_password(password)
         user.save()
@@ -125,9 +134,12 @@ class User(Document):
         message_box = Messagebox.objects.create(user = user.id)
         message_box.save()
 
-        #creating user plan
-        plan = Plan.objects.create(user=user.id)
-        plan.save()
+        #create Wallet
+
+        wallet = Wallet.objects.create(user = user.id)
+        wallet.save()
+
+        
 
         return user
 
@@ -267,4 +279,11 @@ class Plan(Document):
     expire_date = fields.FloatField()
     buy_date = fields.FloatField(default=lambda: datetime.timestamp(datetime.now()))
     plan_version = fields.StringField(choices=VERSION_CHOICES)
+
+
+class Wallet(Document):
+    id = fields.SequenceField(primary_key=True)
+    amount = fields.IntField(default=0)
+    user = fields.ReferenceField("User")
+
 

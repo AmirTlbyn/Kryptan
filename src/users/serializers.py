@@ -8,20 +8,21 @@ from users.models import (
     User,
     UserSystem,
     Plan,
+    Wallet,
 )
 
 class AuthTokenSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(label=_("phone_number"))
+    username = serializers.CharField(label=_("username"))
     password = serializers.CharField(
         label=_("Password"), style={"input_type": "password"}
     )
 
     def validate(self, attrs):
-        phone_number = attrs.get("phone_number")
+        username = attrs.get("username")
         password = attrs.get("password")
 
-        if phone_number and password:
-            user = authenticate(phone_number=phone_number, password=password)
+        if username and password:
+            user = authenticate(username=username, password=password)
             if user:
                 # From Django 1.10 onwards the `authenticate` call simply
                 # returns `None` for is_active=False users.
@@ -33,7 +34,7 @@ class AuthTokenSerializer(serializers.Serializer):
                 msg = _("Unable to log in with provided credentials.")
                 raise serializers.ValidationError(msg)
         else:
-            msg = _('Must include "phone_number" and "password".')
+            msg = _('Must include "username" and "password".')
             raise serializers.ValidationError(msg)
 
         attrs["user"] = user
@@ -56,6 +57,7 @@ class UserSerializer(DocumentSerializer):
             "followers_cnt",
             "watchlist",
             "avatar",
+            "referral",
         ]
         depth = 0
 
@@ -63,7 +65,8 @@ class UserSerializer(DocumentSerializer):
 
         user = User.create_user(
             password=validated_data.get("password"),
-            mobile_number=validated_data.get("mobile_number"),
+            phone_number=validated_data.get("phone_number"),
+            username=validated_data.get("username"),
         )
         user.save()
         return user
@@ -83,7 +86,9 @@ class UserDeepSerializer(DocumentSerializer):
             "followers",
             "followings_cnt",
             "followers_cnt",
+            "watchlist",
             "avatar",
+            "referral",
         ]
         depth = 1 
 
@@ -98,5 +103,12 @@ class PlanSerializer(DocumentSerializer):
     
     class Meta:
         model = Plan
+        fields = "__all__"
+        depth = 0
+
+class WalletSerializer(DocumentSerializer):
+
+    class Meta:
+        model = Wallet
         fields = "__all__"
         depth = 0

@@ -37,6 +37,12 @@ class Idea(Document):
         ("1w","1week"),
         ("1mo","1month"),
     )
+
+    IDEA_CHOICES = (
+        ("1","Private"),
+        ("2","Public"),
+    )
+    
     id = fields.SequenceField(primary_key=True)
     user = fields.ReferenceField("User")
     create_date = fields.FloatField(default=lambda : datetime.timestamp(datetime.now()))
@@ -50,6 +56,7 @@ class Idea(Document):
     chart_model = fields.StringField(choices=CHART_CHOICES,default="C",max_length=1)
     chart_time = fields.StringField(choices=TIME_CHOICES)
     pair = fields.StringField()
+    idea_type = fields.StringField(choices=IDEA_CHOICES, default="2")
 
 
 class Rate(Document):

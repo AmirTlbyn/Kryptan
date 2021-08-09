@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'mongoengine.django.mongo_auth',
     'corsheaders',
     'users',
+    'ideas',
+    'directs',
 ]
 
 MIDDLEWARE = [
@@ -77,6 +79,14 @@ TEMPLATES = [
         },
     },
 ]
+
+#celery setting
+BROKER_URL = 'redis://localhost:6379/2'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/2'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Tehran'
 
 WSGI_APPLICATION = 'Kryptan.wsgi.application'
 REST_FRAMEWORK = { 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'}
@@ -125,6 +135,23 @@ mongoengine.connect(
     host=MONGODB_DATABASES[db]['host']
 )
 
+#chache
+
+CACHE_TTL = 60 * 5 #5min
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
@@ -144,7 +171,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-#MONGOENGINE_USER_DOCUMENT=
+MONGOENGINE_USER_DOCUMENT='users.models.User'
+
 AUTHENTICATION_BACKENDS =(
     'mongoengine.django.auth.MongoEngineBackend',
 ) 

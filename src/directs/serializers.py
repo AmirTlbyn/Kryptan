@@ -1,6 +1,6 @@
 from rest_framework_mongoengine.serializers import DocumentSerializer
 
-from messages.models import Message ,Messagebox
+from directs.models import Message ,Messagebox
 
 class MessageboxSerializer(DocumentSerializer):
 
@@ -16,7 +16,7 @@ class MessageboxDeepSerializer(DocumentSerializer):
         fields = "__all__"
         depth = 1
 
-class MessageboxDeepDeepSerializer(DocumentSerializer):
+class MessageboxTwoDeepSerializer(DocumentSerializer):
 
     class Meta:
         model = Messagebox

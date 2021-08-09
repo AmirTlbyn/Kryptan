@@ -18,3 +18,6 @@ class Message(Document):
     image = fields.ReferenceField("Image")
     title = fields.StringField()
     text = fields.StringField()
+
+class AutomaticMessage(Document):
+    pass

@@ -27,7 +27,7 @@ class IdeaDeepSerializer(DocumentSerializer):
         fields = "__all__"
         depth = 1
 
-class IdeaDeepDeepSerializer(DocumentSerializer):
+class IdeaTwoDeepSerializer(DocumentSerializer):
 
     class Meta:
         model = Idea
