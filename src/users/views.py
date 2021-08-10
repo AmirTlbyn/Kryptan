@@ -11,8 +11,8 @@ from rest_framework.views import APIView
 from users.authentication import TokenAuthentication
 from users.models import Token, User, UserSystem, Wallet
 from users.serializers import UserSerializer, UserDeepSerializer,UserSystemSerializer, WalletSerializer
-from ideas.models import Image
-from ideas.serializers import ImageSerializer
+from ideas.models import Image,Idea
+from ideas.serializers import ImageSerializer,IdeaDeepSerializer,IdeaTwoDeepSerializer
 
 from toolkit.toolkit import existence_error, response_creator, validate_error
 from toolkit.image import upload_image, delete_image
@@ -202,8 +202,7 @@ class SignUp(APIView):
                 },
                 status=400,
             )
-        #deleting cache
-        cache.delete(key_perfix)
+        
 
         username = request.data.get("username")
         if not is_available(username):
@@ -236,6 +235,13 @@ class SignUp(APIView):
         user_serialized = UserSerializer(user_obj)
 
         refferal_code = request.data.get("referral_code")
+
+        #Deleting cache 
+
+        cache.delete(key_perfix)
+
+
+        #referral transaction
 
         user_obj = User.objects.filter(referral=refferal_code).first()
         if user_obj is not None:
@@ -413,10 +419,103 @@ class GetBalance(APIView):
         return response_creator(data=wallet_serialized.data)
 
 
-class GetAllIdeas(APIView):
+class GetIdeas(APIView):
 
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
-    pass
+    def get(self, request):
+        user_id = request.GET.get("user_id")
+        idea_objs = Idea.objects.filter(user=user_id)
 
+        ideas_serialized = IdeaDeepSerializer(idea_objs,many=True)
+        return response_creator(data={"ideas": ideas_serialized.data})
+
+class Follow(APIView):
+
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def patch(self, request):
+        """
+            if user a want to follow user b
+
+            a -> following 
+            b -> followier
+
+        """
+
+        follower_id = request.data.get("follower_id")
+
+
+        
+        following_obj = User.objects.filter(id = request.user.id).first()
+        follower_obj = User.objects.filter(id = follower_id).first()
+
+        if follower_obj is None:
+            return existence_error("User")
+
+        if following_obj is None:
+            return existence_error("User")
+
+
+        
+        follower_serialized = UserSerializer(follower_obj)
+        following_serialized = UserSerializer(following_obj)
+
+        #adding to follwer list
+        followers_list = follower_serialized.data.get("followers")
+
+        if following_obj.id in followers_list:
+            return response_creator(data={
+                                        "error":"user is followed"
+                                    },status_code=400)
+        followers_list.append(following_serialized.data.get("id"))
+
+        #adding to follower_cnt
+
+        followers_cnt = int(follower_serialized.data.get("followers_cnt"))
+        followers_cnt +=1
+
+        #adding to following list
+        followings_list = following_serialized.data.get("followings")
+        followings_list.append(follower_serialized.data.get("id"))
+
+        #adding to following_cnt
+
+        followings_cnt = int(following_serialized.data.get("followings_cnt"))
+        followings_cnt +=1
+
+        follower_serialized = UserSerializer(
+            follower_obj,
+            data = {
+                "followers" : followers_list,
+                "followers_cnt" : followers_cnt,
+            },
+            partial = True
+        )
+
+        following_serialized = UserSerializer(
+            following_obj,
+            data = {
+                "followings" : followings_list,
+                "followings_cnt" : followings_cnt,
+            },
+            partial = True
+        )
+
+        if not following_serialized.is_valid():
+            return validate_error(following_serialized)
+        following_serialized.save()
+        
+        if not follower_serialized.is_valid():
+            return validate_error(follower_serialized)
+        follower_serialized.save()
+        
+        return response_creator(data= {
+                                    "follower" : follower_serialized,
+                                    "following": following_serialized,
+                                })
+
+
+    

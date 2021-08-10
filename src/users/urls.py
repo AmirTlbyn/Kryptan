@@ -10,6 +10,7 @@ from users.views import (
     CreateUserSystem,
     OptValidator,
     GetBalance,
+    Follow,
 )
 
 urlpatterns = [
@@ -22,4 +23,5 @@ urlpatterns = [
     path("create_usersystem",CreateUserSystem.as_view()),
     path("optvalidator",OptValidator.as_view()),
     path("get_balance",GetBalance.as_view()),
+    path("follow",Follow.as_view()),
 ]

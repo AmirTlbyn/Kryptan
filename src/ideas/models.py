@@ -57,6 +57,8 @@ class Idea(Document):
     chart_time = fields.StringField(choices=TIME_CHOICES)
     pair = fields.StringField()
     idea_type = fields.StringField(choices=IDEA_CHOICES, default="2")
+    is_editor_pick = fields.BooleanField(default=False)
+    pick_date = fields.FloatField()
 
 
 class Rate(Document):

@@ -3,6 +3,7 @@ from datetime import datetime, date
 from time import mktime
 import uuid
 import mongoengine
+import os
 
 
 from django.db import models
@@ -81,16 +82,19 @@ class User(Document):
     #functions -> password
 
     def __str__(self):
-        return self.mobile_number
+        return self.phone_number
 
     def get_short_name(self):
-        return self.mobile_number
+        return self.phone_number
 
     def get_full_name(self):
-        return self.mobile_number
+        return self.phone_number
 
     def __unicode__(self):
-        return self.mobile_number
+        return self.phone_number
+
+    def is_authenticated(self):
+        return True
 
     def set_password(self, raw_password):
         """
@@ -120,12 +124,12 @@ class User(Document):
         """
         now = datetime.timestamp(datetime.now())
         role = kwargs.get("role")
-        username = str(kwargs.get("username"))
+        username = str(username).lower()
 
         #create referral
         refer = str(uuid.uuid4())[:5]
 
-        user = cls(phone_number=phone_number, joined_date=now, role=role,username=username.lower(),referral=refer)
+        user = cls(phone_number=phone_number, joined_date=now, role=role,username=username,referral=refer)
 
         user.set_password(password)
         user.save()
