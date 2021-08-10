@@ -452,7 +452,7 @@ class Follow(APIView):
 
         """
 
-        follower_id = request.data.get("follower_id")
+        follower_id = request.data.get("user_id")
 
         #check id of folower id to not follow him/her self
         if int(follower_id) == int(request.user.id):
@@ -529,29 +529,89 @@ class Follow(APIView):
                                     "following": following_serialized.data
                                 },status_code=200)
 
+#Unfollow
+class Unfollow(APIView):
 
-    
-
-class GetFollowersList(APIView):
-    
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
-    def get(self,request):
-        user_id = request.GET.get("user_id")
+    def patch(self, request):
+        """
+            if user a want to unfollow user b
+            user a unfollower
+            user b unfollowing
+        """
 
-        user_obj = User.objects.filter(id = user_id)
+        unfollowing_id = request.data.get("user_id")
 
-        if user_obj is None:
+        unfollower_obj = User.objects.filter(id=request.user.id).first()
+
+        if unfollower_obj is None:
             return existence_error("User")
 
-        followers_objs = user_obj.get_followers_list()
 
-        followers_serialized = UserSerializer(followers_objs,many = True)
+        unfollowing_obj = User.objects.filter(id=unfollowing_id).first()
 
+        if unfollowing_obj is None:
+            return existence_error("User")
 
+        unfollower_serialized = UserSerializer(unfollower_obj)
+        unfollowing_serialized = UserSerializer(unfollowing_obj)
+
+        unfollower_list = unfollower_serialized.data.get("followings")
+        unfollower_cnt = unfollower_serialized.data.get("followings_cnt")
+
+        unfollowing_list = unfollowing_serialized.data.get("followers")
+        unfollowing_cnt = unfollowing_serialized.data.get("followers_cnt")
+
+        if (unfollowing_id in unfollower_list) and (request.user.id in unfollowing_list):
+            unfollower_list.remove(unfollowing_id)
+            unfollower_cnt -= 1
+            unfollowing_list.remove(request.user.id)
+            unfollowing_cnt -=1
+
+            unfollower_serialized = UserSerializer(
+                unfollower_obj,
+                data = {
+                    "followings" : unfollower_list,
+                    "followings_cnt" : unfollower_cnt,
+                },
+                partial=True
+            )
+
+            if not unfollower_serialized.is_valid():
+                return validate_error(unfollower_serialized)
+
+            unfollower_serialized.save()
+
+            unfollowing_serialized = UserSerializer(
+                unfollowing_obj,
+                data = {
+                    "followers" : unfollowing_list,
+                    "followers_cnt": unfollowing_cnt,
+                },
+                partial = True
+            )
+
+            if not unfollowing_serialized.is_valid():
+                return validate_error(unfollowing_serialized)
+
+            unfollowing_serialized.save()
+        
         return response_creator(data={
-            "followes": followers_list
-        },
-        status_code=200,)
+                                    "unfollower" : unfollower_serialized,
+                                    "unfollowing": unfollowing_serialized
+                                    })
+
+        
+
+
+        
+
+
+
+#UpdateProfile
+
+
+#GetMessageBox
 
