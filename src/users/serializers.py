@@ -40,6 +40,15 @@ class AuthTokenSerializer(serializers.Serializer):
         attrs["user"] = user
         return attrs
 
+class UserMiniSerializer(DocumentSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+        ]
+
+
 class UserSerializer(DocumentSerializer):
     class Meta:
         model = User
@@ -72,6 +81,8 @@ class UserSerializer(DocumentSerializer):
         return user
 
 class UserDeepSerializer(DocumentSerializer):
+    followings = UserMiniSerializer(many=True)
+    followers = UserMiniSerializer(many=True)
     class Meta:
         model = User
         fields =[

@@ -293,11 +293,18 @@ class ShowProfile(APIView):
 
     def get(self, request):
 
-        user_serialized = UserDeepSerializer(request.user)
+        user_id = request.GET.get("user_id")
+
+        user_obj = User.objects.filter(id = user_id).first()
+
+        if user_obj is None:
+            return existence_error("User")
+
+        user_serialized = UserDeepSerializer(user_obj)
 
         exp_data = purging(
             input_data=user_serialized.data,
-            equivalence_list=[("avatar","image")]
+            equivalence_list=[("avatar","image")],
         )
 
         return response_creator(data=exp_data)
@@ -447,7 +454,11 @@ class Follow(APIView):
 
         follower_id = request.data.get("follower_id")
 
-
+        #check id of folower id to not follow him/her self
+        if int(follower_id) == int(request.user.id):
+            return response_creator(data={
+                                        "error":"you can't follow urself"
+                                    },status_code=400,status="fail")
         
         following_obj = User.objects.filter(id = request.user.id).first()
         follower_obj = User.objects.filter(id = follower_id).first()
@@ -469,7 +480,8 @@ class Follow(APIView):
         if following_obj.id in followers_list:
             return response_creator(data={
                                         "error":"user is followed"
-                                    },status_code=400)
+                                    },status_code=400,
+                                    status="fail")
         followers_list.append(following_serialized.data.get("id"))
 
         #adding to follower_cnt
@@ -512,10 +524,34 @@ class Follow(APIView):
             return validate_error(follower_serialized)
         follower_serialized.save()
         
-        return response_creator(data= {
-                                    "follower" : follower_serialized,
-                                    "following": following_serialized,
-                                })
+        return response_creator(data = {
+                                    "follower" : follower_serialized.data,
+                                    "following": following_serialized.data
+                                },status_code=200)
 
 
     
+
+class GetFollowersList(APIView):
+    
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def get(self,request):
+        user_id = request.GET.get("user_id")
+
+        user_obj = User.objects.filter(id = user_id)
+
+        if user_obj is None:
+            return existence_error("User")
+
+        followers_objs = user_obj.get_followers_list()
+
+        followers_serialized = UserSerializer(followers_objs,many = True)
+
+
+        return response_creator(data={
+            "followes": followers_list
+        },
+        status_code=200,)
+

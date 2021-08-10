@@ -11,6 +11,7 @@ from users.views import (
     OptValidator,
     GetBalance,
     Follow,
+    GetFollowersList,
 )
 
 urlpatterns = [
@@ -24,4 +25,5 @@ urlpatterns = [
     path("optvalidator",OptValidator.as_view()),
     path("get_balance",GetBalance.as_view()),
     path("follow",Follow.as_view()),
+    path("get_followers_list",GetFollowersList.as_view()),
 ]

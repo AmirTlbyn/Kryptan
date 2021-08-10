@@ -115,6 +115,7 @@ class User(Document):
         """
         return check_password(raw_password, self.password)
 
+
     
     @classmethod
     def create_user(cls, password, phone_number, username, **kwargs):
