@@ -1,4 +1,5 @@
 import uuid
+import re
 
 from datetime import date, datetime, timedelta
 from time import mktime
@@ -10,9 +11,12 @@ from rest_framework.views import APIView
 
 from users.authentication import TokenAuthentication
 from users.models import Token, User, UserSystem, Wallet
-from users.serializers import UserSerializer, UserDeepSerializer,UserSystemSerializer, WalletSerializer
+from users.serializers import UserSerializer, UserDeepSerializer,UserSystemSerializer, WalletSerializer, UserMiniSerializer
 from ideas.models import Image,Idea
 from ideas.serializers import ImageSerializer,IdeaDeepSerializer,IdeaTwoDeepSerializer
+from users.permissions import IsPro
+from directs.models import Message,MessageBox
+from directs.serializers import MessageBoxSerializer,MessageSerializer
 
 from toolkit.toolkit import existence_error, response_creator, validate_error
 from toolkit.image import upload_image, delete_image
@@ -23,6 +27,8 @@ from django.views.decorators.cache import cache_page
 from django.conf import settings
 from django.core.cache import cache
 
+
+##username validator
 
 CACHE_TTL = getattr(settings, 'CACHE_TTL')
 
@@ -54,6 +60,15 @@ def add_minute(min: int = 0) -> float:
     date_time = datetime.now() + timedelta(minutes=min)
     return mktime(date_time.timetuple())
 
+def username_validator(username) -> bool:
+    pattern = "([a-z]*[0-9]*(_)*)*"
+
+    matched =re.match(pattern, username)
+
+    if (matched.start() == 0) and (matched.end() == len(username)):
+        return True
+    return False
+
 
 class SendSms(APIView):
 
@@ -68,14 +83,30 @@ class SendSms(APIView):
                 status=400,
             )
         user_obj = User.objects.filter(phone_number=phone_number).first()
-        if user_obj is not None:
-            return Response(
-                {
-                    "status":"fail",
-                    "errors": {"phone_number": "This phone number is registerd"},
-                },
-                status=400,
-            )
+
+        forget = request.data.get("forget")
+
+        if (forget is None) or (forget is False):
+            if user_obj is not None:
+                return Response(
+                    {
+                        "status":"fail",
+                        "errors": {"phone_number": "This phone number is registerd"},
+                    },
+                    status=400,
+                )
+        
+        else:
+            if user_obj is None:
+                return Response(
+                    {
+                        "status":"fail",
+                        "errors": {"phone_number": "This phone number is not registerd"},
+                    },
+                    status=400,
+                )
+            
+
         code = str(uuid.uuid4().int)[:4]
         if (request.data.get("developer_number") is not None) and (
             request.data.get("developer_number") in ["09111105055"]
@@ -173,6 +204,7 @@ class SignUp(APIView):
 
 
     def post(self, request):
+
         phone_number = request.data.get("phone_number").strip()
         if not mobile_number_validator(phone_number):
             return Response(
@@ -205,6 +237,14 @@ class SignUp(APIView):
         
 
         username = request.data.get("username")
+
+        if not username_validator(username):
+            return response_creator(
+                data={"error":"username only can have lower case alphabetic and number and underscore"},
+                status="fail",
+                status_code=400
+                )
+        
         if not is_available(username):
             return Response(
                 {
@@ -227,7 +267,11 @@ class SignUp(APIView):
         #check ther is a user with this phone number
         user_obj = User.objects.filter(phone_number=phone_number).first()
         if user_obj is not None:
-            return existence_error("User")
+            return response_creator(
+                                    data={"error":"this phone number is registerd"},
+                                    status=fail,
+                                    status_code=400
+                                )
 
         #create user
         user_obj = User.create_user(password=password, phone_number=phone_number, username=username,role="u")
@@ -263,7 +307,13 @@ class SignIn(APIView):
 
     def post(self, request):
 
-        username = request.data.get("username").lower()
+        username = request.data.get("username")
+        if not username_validator(username):
+            return response_creator(
+                data={"error":"username only can have lower case alphabetic and number and underscore"},
+                status="fail",
+                status_code=400
+                )
         password = request.data.get("password")
         user_obj =  User.objects.filter(username=username).first()
         if user_obj is None:
@@ -433,7 +483,18 @@ class GetIdeas(APIView):
 
     def get(self, request):
         user_id = request.GET.get("user_id")
+        user_obj = User.objects.filter(id=user_id).first()
+        if user_obj is None:
+            return existence_error("User")
+
+        user_serialized = UserSerializer(user_obj)
+        
+        plan_obj = Plan.objects.filter(id = user_serialized.get("plan")).first()
+        if plan_obj is None:
+            idea_objs = Idea.objects.filter(user=user_id,idea_type="2")
+
         idea_objs = Idea.objects.filter(user=user_id)
+            
 
         ideas_serialized = IdeaDeepSerializer(idea_objs,many=True)
         return response_creator(data={"ideas": ideas_serialized.data})
@@ -612,6 +673,312 @@ class Unfollow(APIView):
 
 #UpdateProfile
 
+class UpdateProfile(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
 
-#GetMessageBox
+    def patch(self, request):
+        
+        data = deepcopy(request.data)
 
+
+        if data.get("password") is not None:
+            data.pop("password")
+        if data.get("phone_number") is not None:
+            data.pop("phone_number")
+        if data.get("username") is not None:
+            data.pop("username")
+        if data.get("followings") is not None:
+            data.pop("followings")
+        if data.get("followers") is not None:
+            data.pop("followers")
+        if data.get("followings_cnt") is not None:
+            data.pop("followings_cnt")
+        if data.get("followers_cnt") is not None:
+            data.pop("followers_cnt")
+        if data.get("plan") is not None:
+            data.pop("plan")
+        if data.get("email") is not None:
+            data["is_email_validate"] = False
+            
+        
+        user_serialized = UserSerializer(request.user, data=data, partial=True)
+        if not user_serialized.is_valid():
+            return validate_error(user_serialized)
+        
+        user_serialized.save()
+
+        return response_creator(data = user_serialized.data)
+
+
+#change password
+
+class ChangePassword(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def patch(self, request):
+
+        old_password = request.data.get("old_password")
+        password = request.data.get("password")
+        confirm_password = request.data.get("confirm_password")
+
+        if old_password is None or old_password == "":
+            return response_creator(
+                data={"error":"old password was empty"},
+                status_code=400,
+                status=fail
+                )
+        user_obj = User.objects.filter(id= request.user.id).first()
+
+        if user_obj is None:
+            return existence_error("User")
+
+        if not user_obj.check_password(old_password):
+            return response_creator(
+                data={"error":"old password was not right"},
+                status=fail,
+                status_code=400
+                ) 
+        if password != confirm_password:
+            return response_creator(
+                data={"error":"new password and confirm password was not match"},
+                status_code=400,
+                status=fail,
+                )
+        user_obj.set_password(password)
+        return response_creator(
+            data={"succes":"password is changed"},
+            status_code = 200
+        )
+
+
+#forgetpassword
+
+class ForgetPassword(APIView):
+
+    def patch(self, request):
+        phone_number = request.data.get("phone_number").strip()
+        if not mobile_number_validator(phone_number):
+            return Response(
+                {
+                    "status":"fail",
+                    "errors": {"phone_number": "Phone number not valid."},
+                },
+                status=400,
+            )
+        user_obj = User.objects.filter(phone_number = phone_number).first()
+        if user_obj in None:
+            return existence_error("User")
+
+        
+        key_perfix = f"user_{phone_number}"
+        value = cache.get(key_perfix)
+        
+        if value is None:
+            return Response(
+                {
+                    "status":"fail",
+                    "errors": {"cache": "cache deleted forget password process is expired."},
+                },
+                status=400,
+            )
+        if value["is_valid"] == False:
+            return Response(
+                {
+                    "status":"fail",
+                    "errors": {"cache": "this phone number is not validate by sms."},
+                },
+                status=400,
+            )
+        
+        password = request.data.get("password")
+        confirm_password = request.data.get("confirm_password")
+
+        if password != confirm_password:
+            return Response(
+                {
+                    "status":"fail",
+                    "errors":{"password":"passwords are not match."},
+                },
+                status=400
+            )
+        
+        user_obj.set_password(password)
+
+        return response_creator(data={"message":"password changed succesfully"})
+
+#Need Changes
+
+
+class GetAllMessages(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def get(self, request):
+
+        massage_box_obj = MassageBox.objects.filter(user=request.user.id).first()
+        massage_box_serialized = MassageBoxDeepSerializer(massage_box_obj)
+
+        return response_creator(data=message_box_serialized)
+
+#send confirm EMAIL
+
+class SendConfimEmail(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def post(self, request):
+
+        email = request.data.get("email")
+
+        user_obj = User.objects.filter(id=request.user.id).first()
+
+        if user_obj is None:
+            return existence_error("User")
+
+        user_serialized = UserSerializer(user_obj)
+
+        if email != user_serialized.data.get("email"):
+            return response_creator(
+                                        data={"error":"email is not match with user email"},
+                                        status="fail",
+                                        status_code=400
+                                    )
+        if user_serialized.data.get("is_email_validate") == True:
+            return response_creator(
+                                    data={"error":"this email is validate"},
+                                    status="fail",
+                                    status_code = 400
+                                    )
+        code = str(uuid.uuid4().int)[:5]
+        if (request.data.get("developer_number") is not None) and (
+            request.data.get("developer_number") in ["09111105055"]
+        ):
+            code = "11111"
+        
+        key_perfix = f"user_{email}"
+
+        cache_value = cache.get(key_perfix)
+
+        if cache_value is not None:
+            return Response(
+                {
+                    "status":"fail",
+                    "errors": {"email": "we send you code you should wait a sec"},
+                },
+                status=400,
+            )
+
+        value = {
+            "phone" : email,
+            "code" : code,
+            "is_valid" : False,
+            "exp_date" : add_minute(2),
+        }
+
+        cache.set(key_perfix,value,CACHE_TTL)
+        
+        #send email
+
+        return response_creator(value)
+
+
+#Confirm Email
+
+class ConfirmEmail(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("code")
+
+        user_obj = User.objects.filter(request.user.id).first()
+
+        if user_obj is None:
+            return existence_error("User")
+
+        user_serialized = UserSerializer(user_obj)
+
+        if user_serialized.data.get("email") != email:
+            return response_creator(
+                                        data={"error":"email is not match with user email"},
+                                        status="fail",
+                                        status_code=400
+                                    )
+        if user_serialized.data.get("is_email_validate") == True:
+            return response_creator(
+                                    data={"error":"this email is validate"},
+                                    status="fail",
+                                    status_code = 400
+                                    )
+
+        key_perfix = f"user_{email}"
+
+        value = cache.get(key_perfix)
+
+        if value is None:
+            return Response(
+                {
+                    "status":"fail",
+                    "errors": {"cache": "code is deleted use SendSms Endpoint again"},
+                },
+                status=400,
+            )
+        if value["exp_date"] < add_minute():
+            return Response(
+                {
+                    "status":"fail",
+                    "errors": {"code": "code is expired use SendSms Endpoint again"},
+                },
+                status=400,
+            )
+        if value["code"] != code :
+            return Response(
+                {
+                    "status":"fail",
+                    "errors": {"code": "code is not match with phone number use SendSms Endpoint again"},
+                },
+                status=400,
+            )
+        
+        is_validate = user_serialized.data.get("is_email_validate")
+        is_validate = True
+
+        exp_data = {
+            "is_email_validate":is_validate
+        }
+        user_serialized = UserSerializer(user_obj,data = exp_data, partial=True)
+        if not user_serialized.is_valid():
+            return validate_error(user_serialized)
+        user_serialized.save()
+
+        return response_creator(user_serialized.data ,200)
+        
+class GetWatchlist(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def get(self, request):
+
+        user_serialized = UserSerializer(request.user)
+
+        watchlist = user_serialized.data.get("watchlist")
+
+        return response_creator(data={"watchlist":watchlist})
+
+class Search(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def post(self, request):
+        username = request.data.get("username")
+
+        user_objs = User.objects.filter(username__contains = username)
+
+        users_serialized = UserMiniSerializer(user_objs,many=True)
+
+        return response_creator(data=users_serialized.data)
+        
+        

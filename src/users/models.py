@@ -20,7 +20,7 @@ from django.contrib.auth.models import (
     _user_has_perm,
 )
 
-from directs.models import Messagebox
+from directs.models import MessageBox
 
 
 class User(Document):
@@ -41,6 +41,7 @@ class User(Document):
     username = fields.StringField(max_length=200,unique=True,required=True)
     name = fields.StringField(max_length=50, default='')
     email = fields.EmailField()
+    is_email_validate = fields.BooleanField(default=False)
     lastname = fields.StringField(max_length=50, default='')
     biography = fields.StringField()
 
@@ -48,7 +49,7 @@ class User(Document):
     is_superuser = fields.BooleanField(default=False)
     is_active = fields.BooleanField(default=True)
 
-    joined_date = fields.FloatField(default=0)
+    joined_date = fields.FloatField()
     
 
     role = fields.StringField(choices=ROLE_CHOICES,default="u")
@@ -124,8 +125,6 @@ class User(Document):
         email address.
         """
         now = datetime.timestamp(datetime.now())
-        role = kwargs.get("role")
-        username = str(username).lower()
 
         #create referral
         refer = str(uuid.uuid4())[:5]

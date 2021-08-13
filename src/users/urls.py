@@ -11,6 +11,15 @@ from users.views import (
     OptValidator,
     GetBalance,
     Follow,
+    Unfollow,
+    UpdateProfile,
+    ChangePassword,
+    ForgetPassword,
+    GetAllMessages,
+    SendConfimEmail,
+    ConfirmEmail,
+    GetWatchlist,
+    Search,
 )
 
 urlpatterns = [
@@ -24,4 +33,13 @@ urlpatterns = [
     path("optvalidator",OptValidator.as_view()),
     path("get_balance",GetBalance.as_view()),
     path("follow",Follow.as_view()),
+    path("unfollow",Unfollow.as_view()),
+    path("update_profile",UpdateProfile.as_view()),
+    path("change_password",ChangePassword.as_view()),
+    path("forget_password",ForgetPassword.as_view()),
+    path("get_messages",GetAllMessages.as_view()),
+    path("send_confirm_email",SendConfimEmail.as_view()),
+    path("confirm_email",ConfirmEmail.as_view()),
+    path("get_watchlist",GetWatchlist.as_view()),
+    path("search",Search.as_view()),
 ]
