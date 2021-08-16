@@ -6,6 +6,7 @@ class MessageBox(Document):
     id = fields.SequenceField(primary_key=True)
     user = fields.ReferenceField("User")
     messages = fields.ListField(fields.ReferenceField("Message"))
+    automatic_messages = fields.ListField(fields.ReferenceField("AutomaticMessages"))
     read = fields.IntField()
     unread = fields.IntField()
 
@@ -19,5 +20,18 @@ class Message(Document):
     title = fields.StringField()
     text = fields.StringField()
 
+    meta = {"ordering": ["-create_date"]}
+
 class AutomaticMessage(Document):
-    pass
+
+    id = fields.SequenceField(primary_key=True)
+
+    title = fields.StringField(default="پیام خودکار")
+
+    text = fields.StringField()
+    
+    create_date = fields.FloatField(default=lambda : datetime.timestamp(datetime.now()))
+
+    is_read = fields.BooleanField(default=False)
+
+    meta = {"ordering": ["-create_date"]}

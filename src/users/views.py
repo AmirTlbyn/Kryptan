@@ -28,7 +28,6 @@ from django.conf import settings
 from django.core.cache import cache
 
 
-##username validator
 
 CACHE_TTL = getattr(settings, 'CACHE_TTL')
 
@@ -808,7 +807,7 @@ class ForgetPassword(APIView):
 
         return response_creator(data={"message":"password changed succesfully"})
 
-#Need Changes
+
 
 
 class GetAllMessages(APIView):
@@ -975,7 +974,7 @@ class Search(APIView):
     def post(self, request):
         username = request.data.get("username")
 
-        user_objs = User.objects.filter(username__contains = username)
+        user_objs = User.objects.filter(username__icontains = username)
 
         users_serialized = UserMiniSerializer(user_objs,many=True)
 

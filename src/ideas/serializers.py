@@ -1,9 +1,13 @@
 from rest_framework_mongoengine.serializers import DocumentSerializer
 
+from users.serializers import UserMiniSerializer
+
 from ideas.models import (
     Image,
     Idea,
     Rate,
+    Screenshot,
+    Tag,
 )
 
 class ImageSerializer(DocumentSerializer):
@@ -21,6 +25,7 @@ class IdeaSerializer(DocumentSerializer):
         depth = 0
 
 class IdeaDeepSerializer(DocumentSerializer):
+    user = UserMiniSerializer()
 
     class Meta:
         model = Idea
@@ -47,3 +52,17 @@ class RateDeepSerializer(DocumentSerializer):
         model = Rate
         fields = "__all__"
         depth =1
+
+class ScreenshotSerializer(DocumentSerializer):
+
+    class Meta:
+        model=Screenshot,
+        fields="__all__"
+        depth=0
+
+class TagSerializer(DocumentSerializer):
+
+    class Meta:
+        model = Tag
+        fields = "__all__"
+        depth = 0
