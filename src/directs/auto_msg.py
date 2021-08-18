@@ -5,10 +5,10 @@ from persiantools.jdatetime import JalaliDate
 from datetime import datetime
 from persiantools import characters, digits
 
-from infrastructure.massage.models import AutomaticMessage
-from infrastructure.massage.serializers import AutomaticMessageSerializer
+from directs.models import AutomaticMessage, MessageBox
+from directs.serializers import AutomaticMessageSerializer, MessageBoxSerializer
 
-from infrastructure.massage.models import MassageBox
+from massage.models import MassageBox
 
 import requests
 import json
@@ -58,79 +58,62 @@ def push_notification(
 
 
 
-def send_massage(
+def send_message(
     user_serialized= None,
-    reserved_serialized = None,
-    reserved_bool : bool = False,
-    time : float= None,
-    withdraw : bool = False,
-    deposit : bool = False,
-    price : Optional[float]= None,
+    greeting_bool : bool = False,
+    plan_bool : bool = False,
+    plan_serialized = None,
+    ban_bool : bool = False,
     other : bool = False,
     msg_text : str = None,
     title : str = None,
 ):
 
-    name_and_lname = user_serialized.data.get("name") # + ' ' + user_serialized.data.get("last_name")
+    username = user_serialized.data.get("username")
+    name_and_lname = user_serialized.data.get("name") + " " + user_serialized.data.get("lastname")
 
-
-    if reserved_bool:
-        start_time = digits.en_to_fa(str(reserved_serialized.data.get("start_time")))
-        end_time = digits.en_to_fa(str(reserved_serialized.data.get("end_time")))
-        date = get_day(reserved_serialized.data.get("day"))
-
-        title = "رزرو"
+    if greeting_bool:
+        title = "خوش‌آمد گویی"
 
         text = characters.ar_to_fa('''
-{0} عزیز
-رزرو شما از ساعت {1} تا {2} در روز {3} مورخ {4} با موفقیت ثبت شد.
-'''.format(
-    name_and_lname,
-    start_time,
-    end_time,
-    date.get("day_name"),
-    "{0}/{1}/{2}".format(date.get("year"), date.get("month"), date.get("day")),
-).strip())
+        کاربر گرامی {0} عزیز، ورود شما به سایت کریپتان را خوش آمد می‌گوییم
+        '''.format(
+            username,
+        ).strip())
 
+    
+    elif plan_bool:
+        start_date = get_day(plan_serializer.data.get("buy_date"))
+        end_date = get_day(plan_serialized.data.get("expire_date"))
 
-    # variz
-    elif deposit:
-        start_time = digits.en_to_fa(str(reserved_serialized.data.get("start_time")))
-        end_time = digits.en_to_fa(str(reserved_serialized.data.get("end_time")))
-        date = get_day(reserved_serialized.data.get("day"))
-
-#         text = characters.ar_to_fa('''
-# {0} عزیز
-# رزرو شما از ساعت {1} تا {2} در روز {3} مورخ {4} کنسل شد.
-# مبلغ {5} به حساب کیف پول شما اضافه شد.
-# '''.format(
-#     name_and_lname,
-#     start_time,
-#     end_time,
-#     date.get("day_name"),
-#     "{0}/{1}/{2}".format(date.get("year"), date.get("month"), date.get("day")),
-#     price,
-# ).strip())
-
-        title = "کنسل"
+        title = "ارتقای اکانت"
 
         text = characters.ar_to_fa('''
-{0} عزیز
-رزرو شما از ساعت {1} تا {2} در روز {3} مورخ {4} کنسل شد.
-'''.format(
-    name_and_lname,
-    start_time,
-    end_time,
-    date.get("day_name"),
-    "{0}/{1}/{2}".format(date.get("year"), date.get("month"), date.get("day")),
-).strip())
+        کاربر گرامی {0} عزیز،
+        .اکانت شما در روز {1} مورخ {2} با موفقیت ارتقا یافت و تا روز {3} مورخ {4} اعتبار دارد 
+         '''.format(
+            username,
+            start_date.get("day_name"),
+            "{0}/{1}/{2}".format(start_date.get("year"), start_date.get("month"), start_date.get("day")),
+            end_date.get("day_name"),
+            "{0}/{1}/{2}".format(end_date.get("year"), end_date.get("month"), end_date.get("day")),
+        ).strip())
 
 
-    # bardasht
-    # ...
+    elif ban_bool:
+        title ="اخطاریه بن"
 
+        text = characters.ar_to_fa('''
+        کاربر گرامی {0} عزیز،
+        نقض قوانین سایت از طرف شما توسط ادمین مشاهده گردید.
+        لطفا توجه داشته باشید که در صورت نقض دوباره‌ی قوانین اکانت شما به صورت موقت از دسترس خارج خواهد شد.
+        برای خواندن قوانین سایت به صفحه سوالات متدوال رجوع کنید
+        '''.format(
+            username,
+        ).strip())
 
     elif other:
+        title = title
         text = characters.ar_to_fa(msg_text)
     
 
@@ -138,17 +121,36 @@ def send_massage(
     automatic_message_serialized = AutomaticMessageSerializer(data={
         "title" : title,
         "text" : text,
-        "massage_box" : MassageBox.objects.filter(user=user_serialized.data.get("id")).first().id,
     })
     if not automatic_message_serialized.is_valid():
         raise Exception("massage not saved.")
     automatic_message_serialized.save()
+    messagebox_obj = MessageBox.objects.filter(user=user_serialized.data.id).first()
+    if messagebox_obj is None:
+        raise Exception("message box doesn't exist.")
+    msgbox_serialized = MessageBoxSerializer(messagebox_obj)
+    automsg_list = msgbox_serialized.data.get("automatic_messages")
+    automsg_unread = msgbox_serialized.data.get("automatic_msg_unread")
 
+    automsg_list.append(automatic_message_serialized.data.id)
+    automsg_unread += 1
+
+    msgbox_serialized = MessageBoxSerializer(
+        messagebox_obj,
+        data={
+            "automatic_messages": automsg_list,
+            "automatic_msg_unread": automsg_unread,
+        },
+        partial=True
+    )
+
+    if not msgbox_serialized.is_valid():
+        raise Exception("messagebox is not valid")
 
     # send push notification
     if user_serialized.data.get("device_token") is not None:
         push_notification(
-            title = "راکو اپ",
+            title = "کریپتان",
             text = text,
             device_token = user_serialized.data.get("device_token"),
         )

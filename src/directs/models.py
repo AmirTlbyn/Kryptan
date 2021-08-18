@@ -8,7 +8,9 @@ class MessageBox(Document):
     messages = fields.ListField(fields.ReferenceField("Message"))
     automatic_messages = fields.ListField(fields.ReferenceField("AutomaticMessages"))
     read = fields.IntField()
+    automatic_msg_read = fields.IntField()
     unread = fields.IntField()
+    automatic_msg_unread = fields.IntField()
 
 class Message(Document):
     id = fields.SequenceField(primary_key=True)

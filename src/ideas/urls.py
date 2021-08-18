@@ -12,6 +12,10 @@ from ideas.views import (
     NewestIdeas,
     GetEditorsPickIdeas,
     GetTopIdeas,
+    SaveScreenshot,
+    DeleteScreenshot,
+    SearchTag,
+    CreateTag,
 )
 
 urlpatterns = [
@@ -26,4 +30,8 @@ urlpatterns = [
     path("newest_ideas",NewestIdeas.as_view()),
     path("get_editors_pick",GetEditorsPickIdeas.as_view()),
     path("get_top_ideas",GetTopIdeas.as_view()),
+    path("save_screenshot",SaveScreenshot.as_view()),
+    path("delete_screenshot",DeleteScreenshot.as_view()),
+    path("search_tag",SearchTag.as_view()),
+    path("create_tag",CreateTag.as_view()),
 ]

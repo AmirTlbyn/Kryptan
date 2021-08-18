@@ -21,7 +21,7 @@ class MessageBoxDeepSerializer(DocumentSerializer):
         depth = 1
 
 class MessageBoxTwoDeepSerializer(DocumentSerializer):
-
+    user = UserMiniSerializer()
     class Meta:
         model = MessageBox
         fields = "__all__"
@@ -35,7 +35,7 @@ class MessageSerializer(DocumentSerializer):
         depth = 0
 
 class MessageDeepSerializer(DocumentSerializer):
-
+    user = UserMiniSerializer()
     class Meta:
         model = Message
         fields = "__all__"

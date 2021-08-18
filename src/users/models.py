@@ -40,9 +40,9 @@ class User(Document):
     )
     username = fields.StringField(max_length=200,unique=True,required=True)
     name = fields.StringField(max_length=50, default='')
+    lastname = fields.StringField(max_length=50, default='')
     email = fields.EmailField()
     is_email_validate = fields.BooleanField(default=False)
-    lastname = fields.StringField(max_length=50, default='')
     biography = fields.StringField()
 
     is_staff = fields.BooleanField(default=False)
