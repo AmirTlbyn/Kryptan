@@ -69,6 +69,8 @@ class UserSerializer(DocumentSerializer):
             "watchlist",
             "avatar",
             "referral",
+            "invited_by",
+            "first_buy",
         ]
         depth = 0
 
@@ -85,6 +87,7 @@ class UserSerializer(DocumentSerializer):
 class UserDeepSerializer(DocumentSerializer):
     followings = UserMiniSerializer(many=True)
     followers = UserMiniSerializer(many=True)
+    invited_by = UserMiniSerializer()
     class Meta:
         model = User
         fields =[
@@ -104,6 +107,8 @@ class UserDeepSerializer(DocumentSerializer):
             "watchlist",
             "avatar",
             "referral",
+            "invited_by",
+            "first_buy",
         ]
         depth = 1 
 

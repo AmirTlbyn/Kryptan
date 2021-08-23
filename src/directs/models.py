@@ -5,12 +5,20 @@ from datetime import datetime, date
 class MessageBox(Document):
     id = fields.SequenceField(primary_key=True)
     user = fields.ReferenceField("User")
-    messages = fields.ListField(fields.ReferenceField("Message"))
     automatic_messages = fields.ListField(fields.ReferenceField("AutomaticMessages"))
-    read = fields.IntField()
-    automatic_msg_read = fields.IntField()
-    unread = fields.IntField()
-    automatic_msg_unread = fields.IntField()
+    automatic_msg_read = fields.IntField(default=0)
+    automatic_msg_unread = fields.IntField(default=0)
+
+
+class ChatRoom(Document):
+
+    id = fields.SequenceField(primary_key=True)
+    users = fields.ListField(fields.ReferenceField("User"))
+    create_date = fields.FloatField(default=lambda: datetime.timestamp(datetime.now()))
+    messages = fields.ListField(fields.ReferenceField("Message"))
+
+
+    meta = {"ordering":["-create_date"]}
 
 class Message(Document):
     id = fields.SequenceField(primary_key=True)

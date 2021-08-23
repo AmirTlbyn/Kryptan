@@ -15,8 +15,8 @@ from users.serializers import UserSerializer, UserDeepSerializer,UserSystemSeria
 from ideas.models import Image,Idea
 from ideas.serializers import ImageSerializer,IdeaDeepSerializer,IdeaTwoDeepSerializer
 from users.permissions import IsPro
-from directs.models import Message,MessageBox
-from directs.serializers import MessageBoxSerializer,MessageSerializer
+from directs.models import Message,MessageBox, AutomaticMessage
+from directs.serializers import MessageBoxSerializer,MessageSerializer, AutomaticMessageSerializer
 
 from toolkit.toolkit import existence_error, response_creator, validate_error
 from toolkit.image import upload_image, delete_image
@@ -272,8 +272,10 @@ class SignUp(APIView):
                                     status_code=400
                                 )
 
+        inviter_obj = User.objects.filter(referral=refferal_code).first()
+
         #create user
-        user_obj = User.create_user(password=password, phone_number=phone_number, username=username,role="u")
+        user_obj = User.create_user(password=password, phone_number=phone_number, username=username,role="u", invited_by=inviter_obj)
         user_obj.save()
         user_serialized = UserSerializer(user_obj)
 
@@ -286,9 +288,9 @@ class SignUp(APIView):
 
         #referral transaction
 
-        user_obj = User.objects.filter(referral=refferal_code).first()
-        if user_obj is not None:
-            wallet_obj = Wallet.objects.filter(user=user_obj.id).first()
+        
+        if inviter_obj is not None:
+            wallet_obj = Wallet.objects.filter(user=inviter_obj.id).first()
             wallet_obj.amount +=5
             wallet_obj.save()
 
@@ -317,6 +319,15 @@ class SignIn(APIView):
         user_obj =  User.objects.filter(username=username).first()
         if user_obj is None:
             return existence_error("User")
+        
+        if user_obj.is_active() is False:
+            return response_creator(
+                data={
+                    "error":"user is ban"
+                },
+                status_code=400,
+                status="fail"
+            )
         
         if user_obj.check_password(password):
             token, created = Token.objects.get_or_create(user=user_obj)
@@ -697,6 +708,12 @@ class UpdateProfile(APIView):
             data.pop("followers_cnt")
         if data.get("plan") is not None:
             data.pop("plan")
+        if data.get("referral") is not None:
+            data.pop("referral")
+        if data.get("invited_by") is not None:
+            data.pop("invited_by")
+        if data.get("first_buy") is not None:
+            data.pop("first_buy")
         if data.get("email") is not None:
             data["is_email_validate"] = False
             
@@ -816,10 +833,51 @@ class GetAllMessages(APIView):
 
     def get(self, request):
 
-        massage_box_obj = MassageBox.objects.filter(user=request.user.id).first()
-        massage_box_serialized = MassageBoxDeepSerializer(massage_box_obj)
+        page_number=request.GET.get("page_number", 0)
 
-        return response_creator(data=message_box_serialized)
+        massage_box_obj = MassageBox.objects.filter(user=request.user.id).first()
+        massage_box_serialized = MessageBoxSerializer(message_box_obj)
+
+        am_list = massage_box_serialized.data.get("automatic_messages")
+
+        automatic_message_objs = AutomaticMessage.objects.filter(id__in = am_list)
+        
+        for am_obj in automatic_message_objs:
+            if not am_obj.is_read:
+                am_serialized = AutomaticMessageSerializer(
+                    am_obj,
+                    data={"is_read":True},
+                    partial=True
+                )
+
+                if not am_serialized.is_valid():
+                    return validate_error(am_serialized)
+
+                am_serialized.save()
+        
+        un_read = massage_box_serialized.data.get("un_read")
+        read = message_box_serialized.data.get("read")
+
+        read = read+un_read
+
+        un_read = 0
+
+        massage_box_serialized = MessageBoxSerializer(
+            message_box_obj,
+            data={"read":read,
+                "un_read":un_read,
+            },
+            partial=True
+        )
+
+        if not massage_box_serialized.is_valid():
+            return validate_error(message_box_serialized)
+
+        massage_box_serialized.save()
+
+        massage_box_serialized = MessageBoxDeepSerializer(message_box_obj)
+
+        return response_creator(data=message_box_serialized.data)
 
 #send confirm EMAIL
 

@@ -2,7 +2,7 @@ from rest_framework_mongoengine.serializers import DocumentSerializer
 
 from users.serializers import UserMiniSerializer
 
-from directs.models import Message ,MessageBox, AutomaticMessage
+from directs.models import Message ,MessageBox, AutomaticMessage, ChatRoom
 
 class MessageBoxSerializer(DocumentSerializer):
 
@@ -48,3 +48,18 @@ class AutomaticMessageSerializer(DocumentSerializer):
         fields = "__all__"
         depth = 0
 
+class ChatRoomSerializer(DocumentSerializer):
+
+    class Meta:
+        model = ChatRoom
+        fields = "__all__"
+        depth = 0
+
+class ChatRoomDeepSerializer(DocumentSerializer):
+
+    users = UserMiniSerializer(many=True)
+
+    class Meta:
+        model = ChatRoom
+        fields = "__all__"
+        depth = 1

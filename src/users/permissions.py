@@ -29,4 +29,8 @@ class IsPremium (permissions.BasePermission):
             return True
         return False
 
-        
+class IsSuperUser (permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        is_superuser = request.user.is_superuser
+        return is_superuser   

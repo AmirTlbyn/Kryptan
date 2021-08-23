@@ -59,7 +59,7 @@ def push_notification(
 
 
 def send_message(
-    user_serialized= None,
+    user_serialized = None,
     greeting_bool : bool = False,
     plan_bool : bool = False,
     plan_serialized = None,
@@ -101,7 +101,7 @@ def send_message(
 
 
     elif ban_bool:
-        title ="اخطاریه بن"
+        title ="اخطاریه مسدود سازی"
 
         text = characters.ar_to_fa('''
         کاربر گرامی {0} عزیز،

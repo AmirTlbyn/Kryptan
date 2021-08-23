@@ -62,6 +62,8 @@ class User(Document):
     #refferal code
 
     referral = fields.StringField(unique=True)
+    invited_by = fields.ReferenceField("User", null=True)
+    first_buy = fields.BooleanField(default=False)
     #Watchlist
 
     watchlist = fields.ListField(fields.StringField())

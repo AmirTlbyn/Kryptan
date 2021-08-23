@@ -200,9 +200,22 @@ class ShowIdea(APIView):
         idea_obj = Idea.objects.filter(id=idea_id).first()
         if idea_obj is None:
             return existence_error("Idea")
-        idea_obj.views = idea_obj.views + 1
-        idea_obj.save(update_fields=("views", ))
-        idea_serialized = IdeaDeepSerializer(idea_obj)
+        idea_serialized = IdeaSerializer(idea_obj)
+
+        view_cnt = idea_serialized.data.get("views") + 1
+
+        idea_serialized = IdeaSerializer(
+            idea_obj,
+            data={
+                "views":view_cnt,
+            },
+            partial=True,
+        )
+
+        if not idea_serialized.is_valid():
+            return validate_error(idea_serialzied)
+        
+        idea_serialized.save()
 
         plan_obj = Plan.objects.filter(id = user_serialized.get("plan")).first()
         if plan_obj in None:
