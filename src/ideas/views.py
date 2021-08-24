@@ -10,7 +10,7 @@ from toolkit.toolkit import existence_error, response_creator, validate_error
 from toolkit.image import upload_image, delete_image
 
 from users.authentication import TokenAuthentication
-from users.permissions import IsPremium,IsPro, IsEditor
+from users.permissions import IsPremium,IsPro, IsEditor, IsSuperUser
 from users.models import User, Plan
 from users.serializers import UserSerializer, PlanSerializer
 
@@ -29,7 +29,6 @@ from mongoengine.queryset.visitor import Q
 
 
 
-
 class CreatePublicIdea(APIView):
     permission_classes = (permissions.IsAuthenticated, IsPro,)
     authentication_classes = (TokenAuthentication,)
@@ -45,6 +44,8 @@ class CreatePublicIdea(APIView):
             data.pop("pick_date")
         if data.get("views") is not None:
             data.pop("views")
+        if data.get("is_hide") is not None:
+            data.pop("is_hide")
         data["idea_type"] = "2"
 
         idea_serialized = IdeaSerializer(data=data)
@@ -74,6 +75,9 @@ class CreatePrivateIdea(APIView):
             data.pop("pick_date")
         if data.get("views") is not None:
             data.pop("views")
+        if data.get("is_hide") is not None:
+            data.pop("is_hide")
+
         data["idea_type"] = "1"
 
         idea_serialized = IdeaSerializer(data=data)
@@ -93,13 +97,27 @@ class DeleteIdea(APIView):
     authentication_classes = (TokenAuthentication,)
 
     def delete(self, request):
+
+        def get_7_days_later(timestamp: float) -> float:
+            dt_obj = datetime.fromtimestamp(timestamp)
+            dt_obj = dt_obj + timedelta(days=7)
+            t = datetime.timestamp(dt_obj)
+            return t
+        
         idea_id = request.data.get("idea_id")
-        idea_obj = Idea.objects.filter(id=idea_id).first()
+        idea_obj = Idea.objects.filter(id=idea_id).first()        
 
         if idea_obj is None:
             return existence_error("Idea")
         
         idea_serialized = IdeaSerializer(idea_obj)
+
+        create_date = idea_serialized.data.get("create_date")
+
+        exp_date = get_7_days_later(create_date)
+
+        if ((exp_date - create_date) > 604800.0):
+            return response_creator(data={"error":"you cant delete an idea after 7 days"},status="fail",status_code=400)
 
         if int(idea_serialized.data.get("user")) != request.user.id:
             return response_creator(
@@ -127,10 +145,10 @@ class Search(APIView):
         plan_obj = Plan.objects.filter(id = user_serialized.get("plan")).first()
         
         if plan_obj is None:
-            idea_objs = Idea.objects.filter(idea_type="2",tags__icontains=tag_id)
+            idea_objs = Idea.objects.filter(idea_type="2",tags__icontains=tag_id,is_hide=False)
             
         else:
-            idea_objs = Idea.objects.filter(tags__icontains=tag_id)
+            idea_objs = Idea.objects.filter(tags__icontains=tag_id,is_hide=False)
         
 
         ideas_serialized = IdeaSerializer(idea_objs,many=True)
@@ -197,7 +215,7 @@ class ShowIdea(APIView):
         user_serialized = UserSerializer(request.user)
         idea_id = request.GET.get("idea_id")
 
-        idea_obj = Idea.objects.filter(id=idea_id).first()
+        idea_obj = Idea.objects.filter(id=idea_id,is_hide=False).first()
         if idea_obj is None:
             return existence_error("Idea")
         idea_serialized = IdeaSerializer(idea_obj)
@@ -244,9 +262,9 @@ class FeedIdeas(APIView):
         following_lsit = user_serialized.data.get("followings")
         plan_obj = Plan.objects.filter(id = user_serialized.get("plan")).first()
         if plan_obj is None:
-            idea_objs = Idea.objects.filter(idea_type="2",user__in=following_lsit).order_by('create_date')
+            idea_objs = Idea.objects.filter(idea_type="2",user__in=following_lsit,is_hide=False).order_by('create_date')
         else:
-            idea_objs = Idea.objects.filter(user__in=following_lsit).order_by('create_date')
+            idea_objs = Idea.objects.filter(user__in=following_lsit,is_hide=False).order_by('create_date')
 
 
 class NewestIdeas(APIView):
@@ -257,21 +275,21 @@ class NewestIdeas(APIView):
         user_serialized = UserSerializer(request.user)
         plan_obj = Plan.objects.filter(id = user_serialized.get("plan")).first()
         if plan_obj is None:
-            idea_objs = Idea.objects.filter(idea_type="2").order_by('create_date')
+            idea_objs = Idea.objects.filter(idea_type="2",is_hide=False).order_by('create_date')
         else:
-            idea_objs = Idea.objects().order_by('create_date')
+            idea_objs = Idea.objects.filter(is_hide=False).order_by('create_date')
 
         ideas_serialized = IdeaSerializer(idea_objs,many=True)
 
         return response_creator(data={"ideas":ideas_serialized.data})
 
 class ChangeEditorsPick(APIView):
-    permission_classes = (permissions.IsAuthenticated,IsEditor)
+    permission_classes = (permissions.IsAuthenticated, IsEditor, IsSuperUser, )
     authentication_classes = (TokenAuthentication,)
 
     def patch(self, request):
         idea_id = request.data.get("idea_id")
-        idea_obj = Idea.objects.filter(id = idea_id).first()
+        idea_obj = Idea.objects.filter(id = idea_id,is_hide=False).first()
 
         pick = request.data.get("pick")
 
@@ -306,9 +324,9 @@ class GetEditorsPickIdeas(APIView):
 
         plan_obj = Plan.objects.filter(id = user_serialized.get("plan")).first()
         if plan_obj is None:
-            ideas_objs = Idea.objects.filter(is_editor_pick=True,idea_type="2").order_by('pick_date')
+            ideas_objs = Idea.objects.filter(is_editor_pick=True,idea_type="2",is_hide=False).order_by('pick_date')
 
-        ideas_objs = Idea.objects.filter(is_editor_pick=True).order_by('pick_date')
+        ideas_objs = Idea.objects.filter(is_editor_pick=True,is_hide=False).order_by('pick_date')
 
 
         ideas_serialzied = IdeaSerializer(ideas_objs,many=True)
@@ -325,9 +343,9 @@ class GetTopIdeas(APIView):
 
         plan_obj = Plan.objects.filter(id=user_serialized.data.get("plan")).first()
         if plan_obj is None:
-            idea_objs = Idea.objects.filter(idea_type="2").order_by('views') 
+            idea_objs = Idea.objects.filter(idea_type="2",is_hide=False).order_by('views') 
         else:
-            idea_objs = Idea.objects().order_by('views')
+            idea_objs = Idea.objects.filter(is_hide=False).order_by('views')
         
         ideas_serialzied = IdeaSerializer(idea_objs,many=True)
 

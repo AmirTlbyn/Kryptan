@@ -71,6 +71,7 @@ class UserSerializer(DocumentSerializer):
             "referral",
             "invited_by",
             "first_buy",
+            "is_active",
         ]
         depth = 0
 
@@ -109,6 +110,7 @@ class UserDeepSerializer(DocumentSerializer):
             "referral",
             "invited_by",
             "first_buy",
+            "is_active",
         ]
         depth = 1 
 
@@ -132,3 +134,57 @@ class WalletSerializer(DocumentSerializer):
         model = Wallet
         fields = "__all__"
         depth = 0
+
+class AdminUserSerializer(DocumentSerializer):
+    class Meta:
+        model = User 
+        fields = [
+            "id",
+            "phone_number",
+            "username",
+            "name",
+            "email",
+            "is_email_validate",
+            "lastname",
+            "biography",
+            "role",
+            "is_staff",
+            "is_superuser",
+            "followings_cnt",
+            "followers_cnt",
+            "watchlist",
+            "referral",
+            "invited_by",
+            "first_buy",
+            "is_active",
+            "plan",
+        ]
+        depth = 0
+
+class AdminUserDeepSerializer(DocumentSerializer):
+    invited_by = UserMiniSerializer()
+    
+    class Meta:
+        model=User 
+        fields = [
+            "id",
+            "phone_number",
+            "username",
+            "name",
+            "email",
+            "is_email_validate",
+            "lastname",
+            "biography",
+            "role",
+            "is_staff",
+            "is_superuser",
+            "followings_cnt",
+            "followers_cnt",
+            "watchlist",
+            "referral",
+            "invited_by",
+            "first_buy",
+            "is_active",
+            "plan",
+        ]
+        depth = 1

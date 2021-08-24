@@ -15,6 +15,12 @@ class TicketRoom(Document):
         ("m","medium"),
         ("h","high"),
     )
+
+    STATUS_CHOICES = (
+        ("i","In Progress"),
+        ("a","Answerd"),
+        ("e","end"),
+    )
     section = fields.StringField(choices=SECTION_CHOICES,max_length=1)
 
     user = fields.ReferenceField("User")

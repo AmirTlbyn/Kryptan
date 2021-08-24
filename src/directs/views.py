@@ -68,7 +68,7 @@ class CreateRoom(APIView):
 
         return response_creator(data= chatroom_serialized.data, status_code = 201)
 
-class GetAllChatrooms(APIView):
+class GetAllRooms(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
@@ -76,7 +76,7 @@ class GetAllChatrooms(APIView):
         
         page_number = request.GET.get("page_number",0)
 
-        chatroom_objs = ChatRoom.objects.filter(users__in = [request.user.id])[page_number*PAGE_CAPACITY:(page_number+1)*PAGE_CAPACITY]
+        chatroom_objs = ChatRoom.objects.filter(users__in = [request.user.id,])[page_number*PAGE_CAPACITY:(page_number+1)*PAGE_CAPACITY]
         
         chatrooms_serialized = ChatRoomDeepSerializer(chatroom_objs, many=True)
 
@@ -90,8 +90,6 @@ class SendMessage(APIView):
     def post(self, request):
         data = deepcopy(request.data)
 
-        if data.get("title")  is not None:
-            data.pop("title")
         if data.get("is_read") is not None:
             data.pop("is_read")
         if data.get("chatroom_id") is None:
@@ -161,7 +159,7 @@ class SendMessage(APIView):
         return response_creator(data=message_serialized.data,status_code=201)
 
 
-class GetChatRoom(APIView):
+class GetRoom(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
@@ -234,7 +232,24 @@ class GetUnreadMessagesNumber(APIView):
 
         return response_creator(data={"unread_msg_number":msg_unread_cnt})
 
-class SearchChatRoomByUserID(APIView):
+class GetAllMessageNumber(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+
+    def get(self, request):
+        
+        chatrooms_objs = ChatRoom.objects.filter(users__in=[request.user.id,]).first()
+        cnt = 0
+        for chtr_obj in chatrooms_objs:
+            chtr_serialized = ChatRoomSerializer(chtr_obj)
+            msg_list = chtr_serialized.data.get("messages")
+
+            cnt = cnt + Message.objects.filter(id__in = msg_list, user__ne = request.user.id, is_read=False).count()
+        
+        return response_creator(data={"unread_msg_number":cnt})
+
+
+class SearchRoomByUserID(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 

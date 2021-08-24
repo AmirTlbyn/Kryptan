@@ -47,13 +47,6 @@ def is_available (username):
         return True
     return False
 
-
-def get_date(plus_days: int = 0) -> float:
-    # by default return timestamp of today
-    date_time = date.today() + timedelta(days=plus_days)
-    return mktime(date_time.timetuple())
-
-
 def add_minute(min: int = 0) -> float:
     # by default return timestamp of now
     date_time = datetime.now() + timedelta(minutes=min)
