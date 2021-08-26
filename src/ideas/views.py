@@ -365,7 +365,7 @@ class SaveScreenshot(APIView):
             file=request.data.get("screenshot"),
             dir="screenshots",
             prefix_dir=[str(request.user.id)],
-            limit_size=2000,
+            limit_size=3000,
         )
 
         data["screenshot"] = file_path

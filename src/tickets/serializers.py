@@ -1,6 +1,8 @@
 from rest_framework_mongoengine.serializers import DocumentSerializer
 from tickets.models import TicketRoom,TicketText
 
+from users.serializers import UserMiniSerializer
+
 
 class TicketRoomSerializer(DocumentSerializer):
 
@@ -10,7 +12,8 @@ class TicketRoomSerializer(DocumentSerializer):
         depth = 0
 
 class TicketRoomDeepSerializer(DocumentSerializer):
-
+    user = UserMiniSerializer()
+    
     class Meta:
         model = TicketRoom 
         fields = "__all__"

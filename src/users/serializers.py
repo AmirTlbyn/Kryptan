@@ -64,6 +64,7 @@ class UserSerializer(DocumentSerializer):
             "role",
             "followings",
             "followers",
+            "device_token",
             "followings_cnt",
             "followers_cnt",
             "watchlist",

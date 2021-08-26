@@ -27,6 +27,8 @@ class TicketRoom(Document):
 
     priority= fields.StringField(choices=PRIORITY_CHOICES,max_length=1)
 
+    status = fields.StringField(choices=STATUS_CHOICES, default="i", max_length=1)
+
     subject = fields.StringField(max_length=300)
 
     texts = fields.ListField(fields.ReferenceField("TicketText"))

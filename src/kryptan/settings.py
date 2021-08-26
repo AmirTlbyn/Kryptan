@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'ideas',
     'directs',
     'tickets',
-    'admin',
+    'admins',
 ]
 
 MIDDLEWARE = [

@@ -147,6 +147,8 @@ def send_message(
     if not msgbox_serialized.is_valid():
         raise Exception("messagebox is not valid")
 
+    msgbox_serialized.save()
+
     # send push notification
     if user_serialized.data.get("device_token") is not None:
         push_notification(
