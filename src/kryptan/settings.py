@@ -46,11 +46,11 @@ INSTALLED_APPS = [
     'rest_framework_mongoengine',
     'mongoengine.django.mongo_auth',
     'corsheaders',
-    'users',
-    'ideas',
-    'directs',
-    'tickets',
-    'admins',
+    'apps.users',
+    'apps.ideas',
+    'apps.directs',
+    'apps.tickets',
+    'apps.admins',
 ]
 
 MIDDLEWARE = [
@@ -173,7 +173,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-MONGOENGINE_USER_DOCUMENT='users.models.User'
+MONGOENGINE_USER_DOCUMENT='apps.users.models.User'
 
 AUTHENTICATION_BACKENDS =(
     'mongoengine.django.auth.MongoEngineBackend',
