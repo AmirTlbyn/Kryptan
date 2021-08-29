@@ -15,12 +15,25 @@ from apps.ideas.serializers import ImageSerializer
 from apps.tickets.models import TicketRoom,TicketText
 from apps.tickets.serializers import TicketRoomSerializer, TicketRoomDeepSerializer, TicketTextSerializer
 
+import repositories as repo
+
 class CreateTicket (APIView):
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
     def post(self, request):
         data = deepcopy(request.data)
+
+        ticket_obj = TicketRoom.objects.filter(user=request.user.id, status__ne="e").first()
+        
+        if ticket_obj is not None:
+            return response_creator(
+                data={
+                    "error":"you have open tickets please closed it first"
+                },
+                status="fail",
+                status_code=400
+            )
 
         if data.get("status") is not None:
             data.pop("status")
@@ -47,55 +60,41 @@ class CreateTicket (APIView):
         text = data.pop("text")
 
         if data.get("image") is not None:
-
-            file_path = upload_image(
-            file=data.get("image"),
-            dir="tickets",
-            prefix_dir=[str(request.user.id)],
-            limit_size=4000,
-            )
-
-            image_serialized = ImageSerializer(data={
-                "image":file_path,
-            })
-
-            if not image_serialized.is_valid():
-                return validate_error(image_serialized)
             
-            image_serialized.save()
-            text_serialized = TicketTextSerializer(
+            image_serialized, err = repo.ideas.create_image_object(
+                image=data.get("image"), 
+                dir="tickets", 
+                prefix_dir=request.user.id,
+                limit_size=4000
+            )
+            if err is not None:
+                return err
+            
+            text_serialized, err = repo.tickets.create_text_obj(
                 data={
                     "text":text,
-                    "image" : image_serialized.data.get("id"),
+                    "image" : image_serialized.get("id"),
                     "user" : request.user.id,
             })
-
-            if not text_serialized.is_valid():
-                return validate_error(text_serialized)
-            text_serialized.save()
+            if err is not None:
+                return err
 
         else:
-            text_serialized = TicketTextSerializer(
-                data={
+            text_serialized, err = repo.tickets.create_text_obj(data={
                     "text":text,
                     "user":request.user.id,
             })
+            if err is not None:
+                return err
 
-            if not text_serialized.is_valid():
-                return validate_error(text_serialized)
+        data["texts"] = [text_serialized.get("id"),]
 
-            text_serialized.save()
+        ticket_serialized, err = repo.tickets.create_ticket_obj(data=data)
 
-        data["texts"] = [text_serialized.data.get("id"),]
+        if err is not None:
+            return err
 
-        ticket_serialized = TicketRoomSerializer(data=data)
-
-        if not ticket_serialized.is_valid():
-            return validate_error(ticket_serialized)
-
-        ticket_serialized.save()
-
-        return response_creator(data=ticket_serialized.data)
+        return response_creator(data=ticket_serialized)
 
 class SendText(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -104,14 +103,14 @@ class SendText(APIView):
     def post(self, request):
         ticket_id = request.data.get("ticket_id")
         image = request.data.get("image", None)
-        ticket_obj = TicketRoom.objects.filter(id=ticket_id).first()
 
-        if ticket_obj is None:
-            return existence_error("Ticket")
+        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        if err is not None:
+            return err
+        
+        ticket_serialized = repo.tickets.get_ticket_data_by_obj(ticket_obj)
 
-        ticket_serialized = TicketRoomSerializer(ticket_obj)
-
-        if int(request.user.id) != int(ticket_serialized.data.get("id")):
+        if int(request.user.id) != int(ticket_serialized.get("user")):
             return response_creator(
                 data={
                     "error":"permission denied"
@@ -121,63 +120,55 @@ class SendText(APIView):
             )
         
         if image is not None:
-            file_path = upload_image(
-                file=data.get("image"),
+
+            image_serialized, err = repo.ideas.create_image_object(
+                image=data.get("image"), 
                 dir="tickets",
-                prefix_dir=[str(request.user.id)],
-                limit_size=4000,
+                 prefix_dir=request.user.id, 
+                 limit_size=4000
             )
+            if err is not None:
+                return err
 
-            image_serialized = ImageSerializer(data={
-                "image":file_path,
-            })
-
-            if not image_serialized.is_valid():
-                return validate_error(image_serialized)
-
-            image_serialized.save()
-            text_serialized = TicketTextSerializer(
-                data={
+            text_serialized, err = repo.tickets.create_text_obj(data={
                     "text":text,
-                    "image" : image_serialized.data.get("id"),
+                    "image" : image_serialized.get("id"),
                     "user" : request.user.id,
             })
+            if err is not None:
+                return err
 
-            if not text_serialized.is_valid():
-                return validate_error(text_serialized)
-            text_serialized.save()
         else:
 
-            text_serialized = TicketTextSerializer(
-                data={
+            text_serialized, err = repo.tickets.create_text_obj(data={
                     "text":text,
                     "user":request.user.id,
             })
 
-            if not text_serialized.is_valid():
-                return validate_error(text_serialized)
-            text_serialized.save()
+            if err is not None:
+                return err
+
 
         
-        texts_list = ticket_serialized.data.get("texts")
+        texts_list = ticket_serialized.get("texts")
 
-        texts_list.append(text_serialized.data.get("id"))
+        texts_list.append(text_serialized.get("id"))
 
-        ticket_serialized = TicketRoomSerializer(
-            ticket_obj,
+        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+
+        if err is not None:
+            return err
+
+        ticket_serialized, err = repo.tickets.update_ticket(
+            ticket_obj, 
             data={
                 "texts":texts_list,
                 "status":"i",
-            },
-            partial=True
-        )
+            })
+        if err is not None:
+            return err
 
-        if not ticket_serialized.is_valid():
-            return validate_error(ticket_serialized)
-        ticket_serialized.save()
-
-
-        return response_creator(data=ticket_serialized.data)
+        return response_creator(data=ticket_serialized)
 
 class ShowTicket(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -186,14 +177,13 @@ class ShowTicket(APIView):
     def get(self, request):
         ticket_id = request.GET.get("ticket_id")
 
-        ticket_obj = TicketRoom.objects.filter(id=ticket_id).first()
-
-        if ticket_obj is None:
-            return existence_error("Ticket")
+        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        if err is not None:
+            return err
 
         ticket_serialized = TicketRoomDeepSerializer(ticket_obj)
         user = ticket_serialized.data.get("user")
-        user_id = int(user["id"])
+        user_id = int(user.get("id"))
 
         if int(request.user.id) != user_id:
             return response_creator(
@@ -212,11 +202,9 @@ class GetAllTickets(APIView):
     authentication_classes = (TokenAuthentication,)
 
     def get(self, request):
-        ticket_objs = TicketRoom.objects.filter(user=request.user.id)
+        tickets_serialized = repo.tickets.get_tickes_data_by_user(request.user.id)
 
-        tickets_serialized = TicketRoomSerializer(ticket_objs,many=True)
-
-        return response_creator(data={"tickets":tickets_serialized.data})
+        return response_creator(data={"tickets":tickets_serialized})
 
 class EndTicket(APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -224,15 +212,13 @@ class EndTicket(APIView):
 
     def patch(self, request):
         ticket_id = request.data.get("ticket_id")
+        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        if err is not None:
+            return err
+        
+        ticket_serialized = repo.tickets.get_ticket_data_by_obj(ticket_obj)
 
-        ticket_obj = TicketRoom.objects.filter(id=ticket_id).first()
-
-        if ticket_obj is None:
-            return existence_error("Ticket")
-
-        ticket_serialized = TicketRoomSerializer(ticket_obj)
-
-        if int(request.user.id) != int(ticket_serialized.data.get("user")):
+        if int(request.user.id) != int(ticket_serialized.get("user")):
             return response_creator(
                 data={
                     "error":"permission denid."
@@ -241,17 +227,12 @@ class EndTicket(APIView):
                 status_code=400
             )
         
-        ticket_serialized = TicketRoomSerializer(
-            ticket_obj,
+        ticket_serialized, err = repo.tickets.update_ticket(
+            ticket_obj, 
             data={
                 "status":"e"
-            },
-            partial=True
-        )
+            })
+        if err is not None:
+            return err
 
-        if not ticket_serialized.is_valid():
-            return validate_error(ticket_serialized)
-        
-        ticket_serialized.save()
-
-        return response_creator(data=ticket_serialized.data)
+        return response_creator(data=ticket_serialized)

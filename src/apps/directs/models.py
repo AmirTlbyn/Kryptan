@@ -8,8 +8,8 @@ class MessageBox(Document):
     id = fields.SequenceField(primary_key=True)
     user = fields.ReferenceField("User")
     automatic_messages = fields.ListField(fields.ReferenceField("AutomaticMessages"))
-    automatic_msg_read = fields.IntField(default=0)
-    automatic_msg_unread = fields.IntField(default=0)
+    read = fields.IntField(default=0)
+    unread = fields.IntField(default=0)
 
 
 class ChatRoom(Document):

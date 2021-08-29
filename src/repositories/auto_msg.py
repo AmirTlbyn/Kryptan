@@ -66,8 +66,8 @@ def send_message(
     title : str = None,
 ):
 
-    username = user_serialized.data.get("username")
-    name_and_lname = user_serialized.data.get("name") + " " + user_serialized.data.get("lastname")
+    username = user_serialized.get("username")
+    name_and_lname = user_serialized.get("name") + " " + user_serialized.data.get("lastname")
 
     if greeting_bool:
         title = "خوش‌آمد گویی"
@@ -80,8 +80,8 @@ def send_message(
 
     
     elif plan_bool:
-        start_date = get_day(plan_serializer.data.get("buy_date"))
-        end_date = get_day(plan_serialized.data.get("expire_date"))
+        start_date = get_day(plan_serializer.get("buy_date"))
+        end_date = get_day(plan_serialized.get("expire_date"))
 
         title = "ارتقای اکانت"
 
@@ -122,14 +122,14 @@ def send_message(
     if not automatic_message_serialized.is_valid():
         raise Exception("massage not saved.")
     automatic_message_serialized.save()
-    messagebox_obj = MessageBox.objects.filter(user=user_serialized.data.id).first()
+    messagebox_obj = MessageBox.objects.filter(user=user_serialized.get("id")).first()
     if messagebox_obj is None:
         raise Exception("message box doesn't exist.")
     msgbox_serialized = MessageBoxSerializer(messagebox_obj)
     automsg_list = msgbox_serialized.data.get("automatic_messages")
     automsg_unread = msgbox_serialized.data.get("automatic_msg_unread")
 
-    automsg_list.append(automatic_message_serialized.data.id)
+    automsg_list.append(automatic_message_serialized.get("id"))
     automsg_unread += 1
 
     msgbox_serialized = MessageBoxSerializer(
@@ -147,9 +147,9 @@ def send_message(
     msgbox_serialized.save()
 
     # send push notification
-    if user_serialized.data.get("device_token") is not None:
+    if user_serialized.get("device_token") is not None:
         push_notification(
             title = "کریپتان",
             text = text,
-            device_token = user_serialized.data.get("device_token"),
+            device_token = user_serialized.get("device_token"),
         )

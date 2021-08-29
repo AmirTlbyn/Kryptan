@@ -36,6 +36,7 @@ from apps.directs.serializers import MessageBoxSerializer,AutomaticMessageSerial
 from repositories.auto_msg import send_message
 from apps.symbols.models import Symbol
 from apps.symbols.serializers import SymbolSerializer
+import repositories as repo
 
 
 #VARIABELS
@@ -66,10 +67,9 @@ class ChangeRole(APIView):
         role = request.data.get("role")
 
 
-        user_obj = User.objects.filter(id = user_id).first()
-
-        if user_obj is None:
-            return existence_error("User")
+        user_obj, err = repo.users.get_user_object_by_id(user_id)
+        if err is not None:
+            return err
 
         user_serialized = AdminUserSerializer(
             user_obj,
@@ -93,10 +93,9 @@ class BanUser(APIView):
         user_id = request.data.get("user_id")
         is_active = request.data.get("is_active")
 
-        user_obj = User.objects.filter(id=user_id).first()
-
-        if user_obj is None:
-            return existence_error("User")
+        user_obj, err = repo.users.get_user_object_by_id(user_id)
+        if err is not None:
+            return err
 
         user_serialized = AdminUserSerializer(
             user_obj,
@@ -122,10 +121,9 @@ class ChangePlan(APIView):
         plan_version = request.data.get("plan_version")
         expire_date = request.data.get("expire_date")
 
-        user_obj = User.objects.filter(id = user_id).first()
-
-        if user_obj is None:
-            return existence_error("User")
+        user_obj, err = repo.users.get_user_object_by_id(user_id)
+        if err is not None:
+            return err
 
         user_serialized = AdminUserSerializer(user_obj)
 
@@ -145,7 +143,7 @@ class ChangePlan(APIView):
             plan_serialized.save()
             return response_creator(data=plan_serialized.data)
 
-        if plan_version == 0 :
+        if plan_version == "0" :
             plan_obj.delete()
             return response_creator()
 
@@ -174,12 +172,10 @@ class DeleteIdea(APIView):
     def delete(self, request):
          
         idea_id = request.data.get("idea_id")
-        idea_obj = Idea.objects.filter(id=idea_id).first()        
-
-        if idea_obj is None:
-            return existence_error("Idea")
-        
-        idea_serialized = IdeaSerializer(idea_obj)
+        idea_obj, err = repo.ideas.get_idea_object_by_id(idea_id)
+        if err is not None:
+            return err       
+     
         idea_obj.delete()
 
         return response_creator()
@@ -196,18 +192,15 @@ class ChangeHideness(APIView):
         if idea_obj is None:
             return existence_error("Idea")
         
-        idea_serialized = IdeaSerializer(
+        idea_serialized, err = repo.ideas.update_idea(
             idea_obj,
             data={
                 "is_hide":is_hide,
-            },
-            partial=True
-        )
+        })
+        if err is not None:
+            return err
 
-        if not idea_serialized.is_valid():
-            return validate_error(idea_serialized)
-
-        idea_serialized.save()
+        return response_creator(data=idea_serialized)
 
 class ShowAllIdeas(APIView):
     permission_classes = (permissions.IsAuthenticated,IsSuperUser)
@@ -245,70 +238,54 @@ class SendText(APIView):
 
     def post(self, request):
         ticket_id = request.data.get("ticket_id")
-        ticket_obj = TicketRoom.objects.filter(id = ticket_id).first()
+        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        if err is not None:
+            return err
 
-        if ticket_obj is None:
-            return existence_error("Ticket")
+        ticket_serializer = repo.tickets.get_ticket_data_by_obj(ticket_obj)
 
-        ticket_serializer = TicketRoomSerializer(ticket_obj)
-
-        texts_list = ticket_serializer.data.get("texts")
+        texts_list = ticket_serializer.get("texts")
 
         if image is not None:
-            file_path = upload_image(
-                file=data.get("image"),
+            image_serialized, err = repo.ideas.create_image_object(
+                image=data.get("image"),
                 dir="tickets",
-                prefix_dir=[str(request.user.id)],
+                prefix_dir=request.user.id,
                 limit_size=4000,
             )
+            if err is not None:
+                return err
 
-            image_serialized = ImageSerializer(data={
-                "image":file_path,
-            })
-
-            if not image_serialized.is_valid():
-                return validate_error(image_serialized)
-
-            image_serialized.save()
-            text_serialized = TicketTextSerializer(
+            text_serialized, err = repo.tickets.create_text_obj(
                 data={
                     "text":text,
                     "image" : image_serialized.data.get("id"),
                     "user" : request.user.id,
             })
-
-            if not text_serialized.is_valid():
-                return validate_error(text_serialized)
-            text_serialized.save()
+            if err is not None:
+                return err
         else:
 
-            text_serialized = TicketTextSerializer(
+            text_serialized, err = repo.tickets.create_text_obj(
                 data={
                     "text":text,
                     "user":request.user.id,
             })
+            if err is not None:
+                return err
 
-            if not text_serialized.is_valid():
-                return validate_error(text_serialized)
-            text_serialized.save()
+        texts_list.append(text_serialized.get("id"))
 
-        texts_list.append(text_serialized.data.get("id"))
-
-        ticket_serialized = TicketRoomSerializer(
+        ticket_serialized, err = repo.tickets.update_ticket(
             ticket_obj,
             data={
                 "texts":texts_list,
                 "status":"a",
-            },
-            partial=True
-        )
+        })
+        if err is not None:
+            return err
 
-        if not ticket_serialized.is_valid():
-            return validate_error(ticket_serialized)
-        ticket_serialized.save()
-
-
-        return response_creator(data=ticket_serialized.data)
+        return response_creator(data=ticket_serialized)
 
 class EndTicket(APIView):
     permission_classes = (permissions.IsAuthenticated,IsSuperUser)
@@ -317,27 +294,19 @@ class EndTicket(APIView):
     def patch(self, request):
         ticket_id = request.data.get("ticket_id")
 
-        ticket_obj = TicketRoom.objects.filter(id=ticket_id).first()
-
-        if ticket_obj is None:
-            return existence_error("Ticket")
-
-        ticket_serialized = TicketRoomSerializer(ticket_obj)
+        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        if err is not None:
+            return err
         
-        ticket_serialized = TicketRoomSerializer(
+        ticket_serialized, err = repo.tickets.update_ticket(
             ticket_obj,
             data={
                 "status":"e"
-            },
-            partial=True
-        )
+        })
+        if err is not None:
+            return err
 
-        if not ticket_serialized.is_valid():
-            return validate_error(ticket_serialized)
-        
-        ticket_serialized.save()
-
-        return response_creator(data=ticket_serialized.data)
+        return response_creator(data=ticket_serialized)
 
 #_________________________________NOTIFICATIONS__________________________
 
@@ -348,12 +317,11 @@ class SendBanWarn(APIView):
     def post(self, request):
         user_id = request.data.get("user_id")
 
-        user_obj = User.objects.filter(id=user_id).first()
+        user_obj,err = repo.users.get_user_object_by_id(user_id)
+        if err is not None:
+            return err
 
-        if user_obj is None:
-            existence_error("User")
-
-        user_serialized = UserSerializer(user_obj)
+        user_serialized = repo.users.get_user_data_by_obj(user_obj)
 
         send_message(user_serialized=user_serialized ,ban_bool=True)
 
@@ -368,12 +336,11 @@ class SendNotif(APIView):
         text = request.data.get("text")
         title = request.data.get("title")
 
-        user_obj = User.objects.filter(id=user_id).first()
+        user_obj,err = repo.users.get_user_object_by_id(user_id)
+        if err is not None:
+            return err
 
-        if user_obj is None:
-            existence_error("User")
-
-        user_serialized = UserSerializer(user_obj)
+        user_serialized = repo.users.get_user_data_by_obj(user_obj)
 
         send_message(user_serialized=user_serialized,other=True,title=title,msg_text=text)
 
@@ -387,13 +354,13 @@ class SendNotif2All(APIView):
     def post(self, request):
         text = request.data.get("text")
         title = request.data.get("title")    
-        automatic_message_serialized = AutomaticMessageSerializer(data={
-        "title" : title,
-        "text" : text,
-        })
-        if not automatic_message_serialized.is_valid():
-            return  validate_error(automatic_message_serialized)
-        automatic_message_serialized.save()
+        automatic_message_serialized, err = repo.directs.create_automatic_message_object(
+            data={
+                "title" : title,
+                "text" : text,})
+        if err is not None:
+            return err
+
         messagebox_objs = MessageBox.objects.all()
         
         for msg_box in messagebox_objs:
@@ -406,32 +373,27 @@ class SendNotif2All(APIView):
             automsg_list.append(automatic_message_serialized.data.id)
             automsg_unread += 1
 
-            msgbox_serialized = MessageBoxSerializer(
+            msgbox_serialized, err = repo.directs.update_msgbox(
                 msg_box,
                 data={
                     "automatic_messages": automsg_list,
                     "automatic_msg_unread": automsg_unread,
-                },
-                partial=True
-            )
+            })
+            if err is not None:
+                return err
 
-            if not msgbox_serialized.is_valid():
-                return validate_error(msgbox_serialized)
+            user_obj, err = repo.users.get_user_object_by_id(int(msgbox_serialized.get("user")))
+            if err is not None:
+                return err
 
-            msgbox_serialized.save()
-
-            user_obj = User.objects.filter(id=int(msgbox_serialized.data.get("user"))).first()
-
-            if user_obj is None:
-                return existence_error("User")
-            user_serialized = UserSerializer(user_obj)
+            user_serialized = repo.users.get_user_data_by_obj(user_obj)
             # send push notification
-            if user_serialized.data.get("device_token") is not None:
+            if user_serialized.get("device_token") is not None:
                 push_notification(
-                title = "کریپتان",
-                text = text,
-                device_token = user_serialized.data.get("device_token"),
-            )
+                    title = "کریپتان",
+                    text = text,
+                    device_token = user_serialized.get("device_token"),
+                )
 
         return response_creator(data={"message":"notifs sent!"})
 
@@ -443,13 +405,13 @@ class SendNotif2Premiums(APIView):
         text = request.data.get("text")
         title = request.data.get("title")
 
-        automatic_message_serialized = AutomaticMessageSerializer(data={
-            "title" : title,
-            "text" : text,
+        automatic_message_serialized, err = repo.directs.create_automatic_message_object (
+            data={
+                "title" : title,
+                "text" : text,
         })
-        if not automatic_message_serialized.is_valid():
-            return  validate_error(automatic_message_serialized)
-        automatic_message_serialized.save()  
+        if err is not None:
+            return err
 
         user_objs = User.objects.filter(plan__plan_version="2")
         user_list=[]
@@ -463,36 +425,32 @@ class SendNotif2Premiums(APIView):
             msgbox_serialized = MessageBoxSerializer(msg_box)
 
             automsg_list = msgbox_serialized.data.get("automatic_messages")
-            automsg_unread = msgbox_serialized.data.get("automatic_msg_unread")
+            automsg_unread = msgbox_serialized.data.get("unread")
 
-            automsg_list.append(automatic_message_serialized.data.id)
+            automsg_list.append(automatic_message_serialized.get("id"))
             automsg_unread += 1
 
-            msgbox_serialized = MessageBoxSerializer(
+            msgbox_serialized, err = repo.directs.update_msgbox(
                 msg_box,
                 data={
                     "automatic_messages": automsg_list,
-                    "automatic_msg_unread": automsg_unread,
-                },
-                partial=True
+                    "unread": automsg_unread,
+                }
             )
+            if err is not None:
+                return err
 
-            if not msgbox_serialized.is_valid():
-                return validate_error(msgbox_serialized)
+            user_obj, err = repo.users.get_user_object_by_id(int(msgbox_serialized.data.get("user")))
+            if err is not None:
+                return err
 
-            msgbox_serialized.save()
-
-            user_obj = User.objects.filter(id=int(msgbox_serialized.data.get("user"))).first()
-
-            if user_obj is None:
-                return existence_error("User")
-            user_serialized = UserSerializer(user_obj)
+            user_serialized = repo.users.get_user_data_by_obj(user_obj)
             # send push notification
-            if user_serialized.data.get("device_token") is not None:
+            if user_serialized.get("device_token") is not None:
                 push_notification(
                 title = "کریپتان",
                 text = text,
-                device_token = user_serialized.data.get("device_token"),
+                device_token = user_serialized.get("device_token"),
             )
 
         return response_creator(data={"message":"notifs sent!"})
@@ -505,13 +463,13 @@ class SendNotif2Pros(APIView):
         text = request.data.get("text")
         title = request.data.get("title")
 
-        automatic_message_serialized = AutomaticMessageSerializer(data={
-            "title" : title,
-            "text" : text,
+        automatic_message_serialized, err = repo.directs.create_automatic_message_object (
+            data={
+                "title" : title,
+                "text" : text,
         })
-        if not automatic_message_serialized.is_valid():
-            return  validate_error(automatic_message_serialized)
-        automatic_message_serialized.save()  
+        if err is not None:
+            return err
 
         user_objs = User.objects.filter(plan__plan_version="1")
         user_list=[]
@@ -525,36 +483,32 @@ class SendNotif2Pros(APIView):
             msgbox_serialized = MessageBoxSerializer(msg_box)
 
             automsg_list = msgbox_serialized.data.get("automatic_messages")
-            automsg_unread = msgbox_serialized.data.get("automatic_msg_unread")
+            automsg_unread = msgbox_serialized.data.get("unread")
 
-            automsg_list.append(automatic_message_serialized.data.id)
+            automsg_list.append(automatic_message_serialized.get("id"))
             automsg_unread += 1
 
-            msgbox_serialized = MessageBoxSerializer(
+            msgbox_serialized, err = repo.directs.update_msgbox (
                 msg_box,
                 data={
                     "automatic_messages": automsg_list,
-                    "automatic_msg_unread": automsg_unread,
-                },
-                partial=True
-            )
+                    "unread": automsg_unread,
+            })
+            if err is not None:
+                return err
 
-            if not msgbox_serialized.is_valid():
-                return validate_error(msgbox_serialized)
+            user_obj, err = repo.users.get_user_object_by_id(int(msgbox_serialized.data.get("user")))
+            if err is not None:
+                return err
 
-            msgbox_serialized.save()
+            user_serialized = repo.users.get_user_data_by_obj(user_obj)
 
-            user_obj = User.objects.filter(id=int(msgbox_serialized.data.get("user"))).first()
-
-            if user_obj is None:
-                return existence_error("User")
-            user_serialized = UserSerializer(user_obj)
             # send push notification
-            if user_serialized.data.get("device_token") is not None:
+            if user_serialized.get("device_token") is not None:
                 push_notification(
                 title = "کریپتان",
                 text = text,
-                device_token = user_serialized.data.get("device_token"),
+                device_token = user_serialized.get("device_token"),
             )
 
         return response_creator(data={"message":"notifs sent!"})
@@ -570,56 +524,34 @@ class CreateSymbol(APIView):
     def post(self, request):
         data = deepcopy(request.data)
 
-        file_path_40 = upload_image(
-            file=data.get("logo_40"),
+        logo_40_serialized, err = repo.ideas.create_image_object(
+            image=data.get("logo_40"),
             dir="symbols",
-            prefix_dir=[data.get("name")],
+            prefix_dir=data.get("name"),
             limit_size=4000,
+            desc=str(data.get("name")) + " " + str(data.get("name_fa")) + " " + str(data.get("symbol"))
             )
-
-        desc_40 = str(data.get("name")) + " " + str(data.get("name_fa")) + " " + str(data.get("symbol"))
+        if err is not None:
+            return err
         
-        logo_40_serialized = ImageSerializer(
-            data={
-                "image":file_path_40,
-                "description":desc_40,
-        })
-
-        if not logo_40_serialized.is_valid():
-            return validate_error(logo_40_serialized)
-
-        logo_40_serialized.save()
-
-        file_path_24 = upload_image(
-            file=data.get("logo_24"),
+        logo_24_serialized, err = repo.ideas.create_image_object(
+            image=data.get("logo_24"),
             dir="symbols",
-            prefix_dir=[data.get("name")],
+            prefix_dir=data.get("name"),
             limit_size=4000,
-            )
-        desc_24 = str(data.get("name")) + " " + str(data.get("name_fa")) + " " + str(data.get("symbol"))
-        
-        logo_24_serialized = ImageSerializer(
-            data={
-                "image":file_path_24,
-                "description":desc_24,
-        })
+            desc=str(data.get("name")) + " " + str(data.get("name_fa")) + " " + str(data.get("symbol"))
+        )
+        if err is not None:
+            return err
 
-        if not logo_24_serialized.is_valid():
-            return validate_error(logo_24_serialized)
+        data["logo_24"] = logo_24_serialized.get("id")
+        data["logo_40"] = logo_40_serialized.get("id")
 
-        logo_24_serialized.save()
+        symbol_serialized, err = repo.symbols.create_symbol_object(data=data)
+        if err is not None:
+            return err
 
-        data["logo_24"] = logo_24_serialized.data.id
-        data["logo_40"] = logo_40_serialized.data.id
-
-        symbol_serialized = SymbolSerializer(data=data)
-
-        if not symbol_serialized.is_valid():
-            return validate_error(symbol_serialized)
-
-        symbol_serialized.save()
-
-        return response_creator(data=symbol_serialized.data, status_code=201)
+        return response_creator(data=symbol_serialized, status_code=201)
 
 
 

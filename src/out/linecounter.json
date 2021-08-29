@@ -1,0 +1,603 @@
+{
+    "extension": "linecounter",
+    "version": "0.2.7",
+    "workspace": "/Users/amirhossein/Workspace/Kryptan/src",
+    "linecount": [
+        {
+            "version": "0.2.7",
+            "counttime": "2021-08-29 18:40:16",
+            "filesum": 90,
+            "codesum": 3520,
+            "commentsum": 195,
+            "blanksum": 1314,
+            "statistics": {
+                ".py": {
+                    "code": 3520,
+                    "comment": 195,
+                    "blank": 1314
+                }
+            },
+            "filelist": [
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "apps/admins/__init__.py"
+                },
+                {
+                    "filename": "apps/admins/__pycache__/__init__.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/admins/__pycache__/models.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "apps/admins/apps.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 1,
+                    "comment": 1,
+                    "filename": "apps/admins/models.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "apps/directs/__init__.py"
+                },
+                {
+                    "filename": "apps/directs/__pycache__/__init__.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/directs/__pycache__/models.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/directs/__pycache__/serializers.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "apps/directs/apps.py"
+                },
+                {
+                    "blank": 16,
+                    "code": 30,
+                    "comment": 3,
+                    "filename": "apps/directs/models.py"
+                },
+                {
+                    "blank": 17,
+                    "code": 52,
+                    "comment": 2,
+                    "filename": "apps/directs/serializers.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "apps/ideas/__init__.py"
+                },
+                {
+                    "filename": "apps/ideas/__pycache__/__init__.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/ideas/__pycache__/models.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/ideas/__pycache__/serializers.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "apps/ideas/apps.py"
+                },
+                {
+                    "blank": 24,
+                    "code": 74,
+                    "comment": 2,
+                    "filename": "apps/ideas/models.py"
+                },
+                {
+                    "blank": 19,
+                    "code": 56,
+                    "comment": 2,
+                    "filename": "apps/ideas/serializers.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "apps/symbols/__init__.py"
+                },
+                {
+                    "filename": "apps/symbols/__pycache__/__init__.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/symbols/__pycache__/models.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/symbols/__pycache__/serializers.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "apps/symbols/apps.py"
+                },
+                {
+                    "blank": 12,
+                    "code": 11,
+                    "comment": 1,
+                    "filename": "apps/symbols/models.py"
+                },
+                {
+                    "blank": 7,
+                    "code": 23,
+                    "comment": 2,
+                    "filename": "apps/symbols/serializers.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "apps/tickets/__init__.py"
+                },
+                {
+                    "filename": "apps/tickets/__pycache__/__init__.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/tickets/__pycache__/models.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/tickets/__pycache__/serializers.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "apps/tickets/apps.py"
+                },
+                {
+                    "blank": 21,
+                    "code": 34,
+                    "comment": 2,
+                    "filename": "apps/tickets/models.py"
+                },
+                {
+                    "blank": 9,
+                    "code": 19,
+                    "comment": 2,
+                    "filename": "apps/tickets/serializers.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "apps/users/__init__.py"
+                },
+                {
+                    "filename": "apps/users/__pycache__/__init__.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/users/__pycache__/authentication.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/users/__pycache__/models.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "apps/users/__pycache__/serializers.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "apps/users/apps.py"
+                },
+                {
+                    "blank": 17,
+                    "code": 36,
+                    "comment": 5,
+                    "filename": "apps/users/authentication.py"
+                },
+                {
+                    "blank": 89,
+                    "code": 160,
+                    "comment": 14,
+                    "filename": "apps/users/models.py"
+                },
+                {
+                    "blank": 20,
+                    "code": 167,
+                    "comment": 5,
+                    "filename": "apps/users/serializers.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "Kryptan/__init__.py"
+                },
+                {
+                    "filename": "Kryptan/__pycache__/__init__.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "Kryptan/__pycache__/celery.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "Kryptan/__pycache__/settings.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "Kryptan/__pycache__/urls.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "Kryptan/__pycache__/wsgi.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 11,
+                    "comment": 0,
+                    "filename": "Kryptan/celery.py"
+                },
+                {
+                    "blank": 44,
+                    "code": 128,
+                    "comment": 17,
+                    "filename": "Kryptan/settings.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 8,
+                    "comment": 0,
+                    "filename": "Kryptan/urls.py"
+                },
+                {
+                    "blank": 5,
+                    "code": 4,
+                    "comment": 0,
+                    "filename": "Kryptan/wsgi.py"
+                },
+                {
+                    "blank": 8,
+                    "code": 12,
+                    "comment": 1,
+                    "filename": "manage.py"
+                },
+                {
+                    "filename": "repositories/__pycache__/auto_msg.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "repositories/__pycache__/directs.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "repositories/__pycache__/permissions.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 31,
+                    "code": 111,
+                    "comment": 16,
+                    "filename": "repositories/auto_msg.py"
+                },
+                {
+                    "blank": 38,
+                    "code": 73,
+                    "comment": 6,
+                    "filename": "repositories/directs.py"
+                },
+                {
+                    "blank": 58,
+                    "code": 141,
+                    "comment": 5,
+                    "filename": "repositories/ideas.py"
+                },
+                {
+                    "blank": 12,
+                    "code": 23,
+                    "comment": 5,
+                    "filename": "repositories/permissions.py"
+                },
+                {
+                    "blank": 4,
+                    "code": 0,
+                    "comment": 5,
+                    "filename": "repositories/tasks.py"
+                },
+                {
+                    "blank": 32,
+                    "code": 57,
+                    "comment": 5,
+                    "filename": "repositories/tickets.py"
+                },
+                {
+                    "blank": 13,
+                    "code": 27,
+                    "comment": 4,
+                    "filename": "repositories/users.py"
+                },
+                {
+                    "filename": "toolkit/__pycache__/EMS.cpython-36.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "toolkit/__pycache__/EMS.cpython-37.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "toolkit/__pycache__/image.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "toolkit/__pycache__/purge.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "toolkit/__pycache__/toolkit.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 26,
+                    "code": 45,
+                    "comment": 10,
+                    "filename": "toolkit/image.py"
+                },
+                {
+                    "blank": 21,
+                    "code": 50,
+                    "comment": 0,
+                    "filename": "toolkit/purge.py"
+                },
+                {
+                    "blank": 4,
+                    "code": 36,
+                    "comment": 9,
+                    "filename": "toolkit/toolkit.py"
+                },
+                {
+                    "filename": "urls/__pycache__/admins.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "urls/__pycache__/directs.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "urls/__pycache__/ideas.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "urls/__pycache__/users.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 2,
+                    "code": 37,
+                    "comment": 2,
+                    "filename": "urls/admins.py"
+                },
+                {
+                    "blank": 2,
+                    "code": 19,
+                    "comment": 2,
+                    "filename": "urls/directs.py"
+                },
+                {
+                    "blank": 2,
+                    "code": 37,
+                    "comment": 2,
+                    "filename": "urls/ideas.py"
+                },
+                {
+                    "blank": 2,
+                    "code": 15,
+                    "comment": 2,
+                    "filename": "urls/tickets.py"
+                },
+                {
+                    "blank": 2,
+                    "code": 43,
+                    "comment": 2,
+                    "filename": "urls/users.py"
+                },
+                {
+                    "filename": "views/__pycache__/admins.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "views/__pycache__/directs.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "views/__pycache__/ideas.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "views/__pycache__/users.cpython-38.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 175,
+                    "code": 438,
+                    "comment": 12,
+                    "filename": "views/admins.py"
+                },
+                {
+                    "blank": 68,
+                    "code": 168,
+                    "comment": 4,
+                    "filename": "views/directs.py"
+                },
+                {
+                    "blank": 157,
+                    "code": 412,
+                    "comment": 4,
+                    "filename": "views/ideas.py"
+                },
+                {
+                    "blank": 20,
+                    "code": 37,
+                    "comment": 2,
+                    "filename": "views/symbols.py"
+                },
+                {
+                    "blank": 60,
+                    "code": 180,
+                    "comment": 3,
+                    "filename": "views/tickets.py"
+                },
+                {
+                    "blank": 262,
+                    "code": 724,
+                    "comment": 36,
+                    "filename": "views/users.py"
+                }
+            ]
+        }
+    ]
+}

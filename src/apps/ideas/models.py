@@ -77,13 +77,21 @@ class Screenshot(Document):
     user = fields.ReferenceField("User")
     image = fields.StringField()
     chart_model = fields.StringField(choices=CHART_CHOICES,default="C",max_length=1)
-    chart_time = fields.StringField(choices=TIME_CHOICES)
+    timeframe = fields.StringField(choices=TIME_CHOICES)
     pair = fields.StringField()
 
 
 class Tag(Document):
     id = fields.SequenceField(primary_key=True)
     tag = fields.StringField()
+
+class View(Document):
+    id = fields.SequenceField(primary_key=True)
+    idea = fields.ReferenceField("Idea")
+    user = fields.ReferenceField("User")
+    ip = fields.StringField()
+    last_view = fields.FloatField(default=lambda: datetime.timestamp(datetime.now()))
+
 
     
 

@@ -29,6 +29,7 @@ from apps.directs.serializers import (
     ChatRoomDeepSerializer,
     MessageDeepSerializer,
 )
+import repositories as repo
 
 #VARIABELS
 PAGE_CAPACITY = 20
@@ -39,44 +40,32 @@ class CreateRoom(APIView):
     authentication_classes = (TokenAuthentication,)
 
     def post(self, request):
-        user_id = request.data.get("user_id")
-        user2_id = request.user.id
+        user_list = [request.data.get("user_id"),equest.user.id,]
 
-        query = Q()
-
-        query &= Q(users__in = [user_id,])
-
-        query &= Q(users__in = [user2_id,])
-
-        chatroom_obj = ChatRoom.objects.filter(query).first()
-
-        if chatroom_obj is not None:
+        chatroom_objs = repo.directs.get_room_obj_by_users(user_list)
+        
+        if len(chatroom_objs) != 0:
             return response_creator(
                 data = {"error":"chatroom with this 2 users exist"},
                 status="fail",
                 status_code=400,
             )
-
-        user_list = [user_id,user2_id,]
-
-        chatroom_serialized = ChatRoomSerializer(data={"users":user_list})
-
-        if not chatroom_serialized.is_valid():
-            return validate_error(chatroom_serialized)
         
-        chatroom_serialized.save()
+        chatroom_serialized, err = repo.directs.create_room_object(data={"users":user_list})
 
-        return response_creator(data= chatroom_serialized.data, status_code = 201)
+        if err is not None:
+            return err
+
+        return response_creator(data= chatroom_serialized, status_code = 201)
 
 class GetAllRooms(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
 
     def get(self, request):
-        
         page_number = request.GET.get("page_number",0)
 
-        chatroom_objs = ChatRoom.objects.filter(users__in = [request.user.id,])[page_number*PAGE_CAPACITY:(page_number+1)*PAGE_CAPACITY]
+        chatroom_objs = repo.directs.get_room_obj_by_users([request.user.id,])[page_number*PAGE_CAPACITY:(page_number+1)*PAGE_CAPACITY]
         
         chatrooms_serialized = ChatRoomDeepSerializer(chatroom_objs, many=True)
 
@@ -101,62 +90,48 @@ class SendMessage(APIView):
         chatroom_id = data.get("chatroom_id")
         data.pop("chatroom_id")
 
-        chatroom_obj = ChatRoom.objects.filter(id=chatroom_id).first()
-
-        if chatroom_obj is None:
-            return existence_error("ChatRoom")
+        chatroom_obj, err = repo.directs.get_room_object_by_id(chatroom_id)
+        if err is not None:
+            return err
         
-        chatroom_serialized = ChatRoomSerializer(chatroom_obj)
+        chatroom_serialized = repo.directs.get_room_data_by_obj(chatroom_obj)
 
-        users_list = chatroom_serialized.data.get("users")
+        users_list = chatroom_serialized.get("users")
 
         if request.user.id not in users_list:
             return response_creator(
-                data={"error":"permission denied"},
+                data={"error":"permission denied."},
                 status="fail",
                 status_code=403
             )
 
         if data.get("image") is not None:
-            file_path = upload_image(
-                file=request.data.get("image"),
-                dir="directs",
-                prefix_dir=[str(request.user.id)],
-                limit_size=2000,
-            )
-            data.pop("image")
-            image_serialized = ImageSerializer(image = file_path)
-            if not image_serialized.is_valid():
-                return validate_error(image_serialized)
-        
-            image_serialized.save()
+            image_serialized, err = repo.ideas.create_image_object(image=image,dir="directs",prefix_dir= request.user.id,limit_size = 2000)
 
-            data["image"] = image_serialized.data.get("id")
+            if err is not None:
+                return err
+            data["image"] = image_serialized.get("id")
             
         data["user"] = request.user.id
 
-        messages_list = chatroom_serialized.data.get("messages")
+        messages_list = chatroom_serialized.get("messages")
         
-        message_serialized = MessageSerializer(data=data)
+        message_serialized, err = repo.directs.create_message_object(data)
 
-        if not message_serialized.is_valid():
-            return validate_error(message_serialized)
-
-        message_serialized.save()
+        if err is not None:
+            return err
         
-        messages_list.append(message_serialized.id)
-
-        chatroom_serialized = ChatRoomSerializer(
-            chatroom_obj,
-            data = {"messages":messages_list},
-            partial=True,
+        messages_list.append(message_serialized.get("id"))
+        
+        chatroom_serialized, err = repo.directs.update_room(
+            room_obj =chatroom_obj,
+            data = {"users": user_list}
         )
-        if not chatroom_serialized.is_valid():
-            return validate_error(chatroom_serialized)
 
-        chatroom_serialized.save()
+        if err is not None:
+            return err
     
-        return response_creator(data=message_serialized.data,status_code=201)
+        return response_creator(data=message_serialized,status_code=201)
 
 
 class GetRoom(APIView):
@@ -165,15 +140,13 @@ class GetRoom(APIView):
 
     def get(self,request):
         chatroom_id = request.GET.get("chatroom_id")
+        
+        chatroom_serialized, err = repo.directs.get_room_data_by_id(chatroom_id)
 
-        chatroom_obj = ChatRoom.objecta.filter(id=chatroom_id).first()
+        if err is not None:
+            return err
 
-        if chatroom_obj is None:
-            return existence_error("ChatRoom")
-
-        chatroom_serialized = ChatRoomSerializer(chatroom_obj)
-
-        users_list = chatroom_serialized.data.get("users")
+        users_list = chatroom_serialized.get("users")
 
         if request.user.id not in users_list:
             return response_creator(
@@ -181,7 +154,7 @@ class GetRoom(APIView):
                 status="fail",
                 status_code=403
             )
-        messages_list = chatroom_serialized.data.get("messages")
+        messages_list = chatroom_serialized.get("messages")
 
         message_objs = Message.objects.filter(id__in = messages_list, user__ne=request.user.id)
 
@@ -209,16 +182,14 @@ class GetUnreadMessagesNumber(APIView):
 
     def get(self, request):
         chatroom_id = request.GET.get("chatroom_id")
+        chatroom_obj, err = repo.directs.get_room_object_by_id(chatroom_id)
+        if err is not None:
+            return err
 
-        chatroom_obj = ChatRoom.objects.filter(id=chatroom_id).first()
-
-        if chatroom_obj is None:
-            return existence_error("ChatRoom")
-
-        chatroom_serialized = ChatRoomSerializer(chatroom_obj)
-
-        users_list = chatroom_serialized.data.get("users")
-        messages_list = chatroom_serialized.data.get("messages")
+        chatroom_serialized = repo.directs.get_room_data_by_obj(chatroom_obj)
+ 
+        users_list = chatroom_serialized.get("users")
+        messages_list = chatroom_serialized.get("messages")
 
 
         if request.user.id not in users_list:
@@ -238,7 +209,7 @@ class GetAllMessageNumber(APIView):
 
     def get(self, request):
         
-        chatrooms_objs = ChatRoom.objects.filter(users__in=[request.user.id,]).first()
+        chatrooms_objs = repo.directs.get_room_obj_by_users([request.user.id,])
         cnt = 0
         for chtr_obj in chatrooms_objs:
             chtr_serialized = ChatRoomSerializer(chtr_obj)
@@ -257,32 +228,11 @@ class SearchRoomByUserID(APIView):
         user_id = request.GET.get("user_id")
         user2_id = request.user.id
 
-        query = Q()
-
-        query &= Q(users__in = [user_id,])
-
-        query &= Q(users__in = [user2_id,])
-
-        chatroom_obj = ChatRoom.objects.filter(query).first()
+        chatroom_obj = repo.directs.get_room_obj_by_users([request.GET.get("user_id"),request.user.id])
 
         if chatroom_obj is None:
             return existence_error("ChatRoom")
-
+        
         chatroom_serialized = ChatRoomDeepSerializer(chatroom_obj)
 
         return response_creator(data=chatroom_serialized.data)
-
-
-
-        
-
-        
-
-
-
-
-
-        
-        
-
-        

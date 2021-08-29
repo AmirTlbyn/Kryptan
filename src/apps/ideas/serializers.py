@@ -9,6 +9,7 @@ from apps.ideas.models import (
     Rate,
     Screenshot,
     Tag,
+    View,
 )
 
 class ImageSerializer(DocumentSerializer):
@@ -65,5 +66,12 @@ class TagSerializer(DocumentSerializer):
 
     class Meta:
         model = Tag
+        fields = "__all__"
+        depth = 0
+
+class ViewSerializer(DocumentSerializer):
+
+    class Meta:
+        model = View
         fields = "__all__"
         depth = 0
