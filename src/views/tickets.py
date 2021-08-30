@@ -5,8 +5,10 @@ from rest_framework.views import APIView
 
 #Python libs
 from copy import deepcopy
+from datetime import datetime
 
 #Internal libs
+from apps.tickets.tasks import check_for_ticket_expireness
 from toolkit.toolkit import existence_error, response_creator, validate_error
 from toolkit.image import upload_image, delete_image
 from apps.users.authentication import TokenAuthentication
@@ -14,8 +16,8 @@ from apps.ideas.models import Image
 from apps.ideas.serializers import ImageSerializer
 from apps.tickets.models import TicketRoom,TicketText
 from apps.tickets.serializers import TicketRoomSerializer, TicketRoomDeepSerializer, TicketTextSerializer
-
-import repositories as repo
+import repositories.ideas as repo_idea
+import repositories.tickets as repo_ticket
 
 class CreateTicket (APIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -61,7 +63,7 @@ class CreateTicket (APIView):
 
         if data.get("image") is not None:
             
-            image_serialized, err = repo.ideas.create_image_object(
+            image_serialized, err = repo_idea.create_image_object(
                 image=data.get("image"), 
                 dir="tickets", 
                 prefix_dir=request.user.id,
@@ -70,7 +72,7 @@ class CreateTicket (APIView):
             if err is not None:
                 return err
             
-            text_serialized, err = repo.tickets.create_text_obj(
+            text_serialized, err = repo_ticket.create_text_obj(
                 data={
                     "text":text,
                     "image" : image_serialized.get("id"),
@@ -80,7 +82,7 @@ class CreateTicket (APIView):
                 return err
 
         else:
-            text_serialized, err = repo.tickets.create_text_obj(data={
+            text_serialized, err = repo_ticket.create_text_obj(data={
                     "text":text,
                     "user":request.user.id,
             })
@@ -89,10 +91,20 @@ class CreateTicket (APIView):
 
         data["texts"] = [text_serialized.get("id"),]
 
-        ticket_serialized, err = repo.tickets.create_ticket_obj(data=data)
+        ticket_serialized, err = repo_ticket.create_ticket_obj(data=data)
 
         if err is not None:
             return err
+
+        check_time = datetime.timestamp(
+            datetime.fromtimestamp(ticket_serialized.get("last_update")) + \
+                timedelta(days = 7)
+        )
+
+        check_for_ticket_expireness.apply_async(
+            (ticket_serialized.get("id"),),
+            countdown = check_time,
+        )
 
         return response_creator(data=ticket_serialized)
 
@@ -104,11 +116,11 @@ class SendText(APIView):
         ticket_id = request.data.get("ticket_id")
         image = request.data.get("image", None)
 
-        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        ticket_obj, err = repo_ticket.get_ticket_object_by_id(ticket_id)
         if err is not None:
             return err
         
-        ticket_serialized = repo.tickets.get_ticket_data_by_obj(ticket_obj)
+        ticket_serialized = repo_ticket.get_ticket_data_by_obj(ticket_obj)
 
         if int(request.user.id) != int(ticket_serialized.get("user")):
             return response_creator(
@@ -121,7 +133,7 @@ class SendText(APIView):
         
         if image is not None:
 
-            image_serialized, err = repo.ideas.create_image_object(
+            image_serialized, err = repo_idea.create_image_object(
                 image=data.get("image"), 
                 dir="tickets",
                  prefix_dir=request.user.id, 
@@ -130,7 +142,7 @@ class SendText(APIView):
             if err is not None:
                 return err
 
-            text_serialized, err = repo.tickets.create_text_obj(data={
+            text_serialized, err = repo_ticket.create_text_obj(data={
                     "text":text,
                     "image" : image_serialized.get("id"),
                     "user" : request.user.id,
@@ -140,7 +152,7 @@ class SendText(APIView):
 
         else:
 
-            text_serialized, err = repo.tickets.create_text_obj(data={
+            text_serialized, err = repo_ticket.create_text_obj(data={
                     "text":text,
                     "user":request.user.id,
             })
@@ -154,16 +166,17 @@ class SendText(APIView):
 
         texts_list.append(text_serialized.get("id"))
 
-        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        ticket_obj, err = repo_ticket.get_ticket_object_by_id(ticket_id)
 
         if err is not None:
             return err
 
-        ticket_serialized, err = repo.tickets.update_ticket(
+        ticket_serialized, err = repo_ticket.update_ticket(
             ticket_obj, 
             data={
                 "texts":texts_list,
                 "status":"i",
+                "last_update":text_serialized.get("create_date"),
             })
         if err is not None:
             return err
@@ -177,7 +190,7 @@ class ShowTicket(APIView):
     def get(self, request):
         ticket_id = request.GET.get("ticket_id")
 
-        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        ticket_obj, err = repo_ticket.get_ticket_object_by_id(ticket_id)
         if err is not None:
             return err
 
@@ -202,7 +215,7 @@ class GetAllTickets(APIView):
     authentication_classes = (TokenAuthentication,)
 
     def get(self, request):
-        tickets_serialized = repo.tickets.get_tickes_data_by_user(request.user.id)
+        tickets_serialized = repo_ticket.get_tickes_data_by_user(request.user.id)
 
         return response_creator(data={"tickets":tickets_serialized})
 
@@ -212,11 +225,11 @@ class EndTicket(APIView):
 
     def patch(self, request):
         ticket_id = request.data.get("ticket_id")
-        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        ticket_obj, err = repo_ticket.get_ticket_object_by_id(ticket_id)
         if err is not None:
             return err
         
-        ticket_serialized = repo.tickets.get_ticket_data_by_obj(ticket_obj)
+        ticket_serialized = repo_ticket.get_ticket_data_by_obj(ticket_obj)
 
         if int(request.user.id) != int(ticket_serialized.get("user")):
             return response_creator(
@@ -227,10 +240,11 @@ class EndTicket(APIView):
                 status_code=400
             )
         
-        ticket_serialized, err = repo.tickets.update_ticket(
+        ticket_serialized, err = repo_ticket.update_ticket(
             ticket_obj, 
             data={
-                "status":"e"
+                "status":"e",
+                "last_update":datetime.timestamp(datetime.now()),
             })
         if err is not None:
             return err

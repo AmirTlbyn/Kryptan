@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 #Python lib
 from copy import deepcopy
+from datetime import datetime
 
 #Internal libs
 from apps.users.authentication import TokenAuthentication
@@ -232,6 +233,19 @@ class ShowAllTickets(APIView):
 
         return response_creator(data={"tickets":tickets_serialized.data})
 
+class GetInProgressTickets (APIView):
+    permission_classes = (permissions.IsAuthenticated,IsSuperUser)
+    authentication_classes = (TokenAuthentication,)
+
+    def get(self, request):
+        order_by = request.GET.get("order_by")
+
+        ticket_objs = TicketRoom.objects.filter(status="i")
+
+        tickets_serialized = TicketRoomSerializer(ticket_objs, many=True)
+
+        return response_creator(data={"tickets": tickets_serialized.data})
+
 class SendText(APIView):
     permission_classes = (permissions.IsAuthenticated,IsSuperUser)
     authentication_classes = (TokenAuthentication,)
@@ -281,6 +295,7 @@ class SendText(APIView):
             data={
                 "texts":texts_list,
                 "status":"a",
+                "last_update":text_serialized.get("create_date"),
         })
         if err is not None:
             return err
@@ -301,7 +316,8 @@ class EndTicket(APIView):
         ticket_serialized, err = repo.tickets.update_ticket(
             ticket_obj,
             data={
-                "status":"e"
+                "status":"e",
+                "last_update":datetime.timestamp(datetime.now()),
         })
         if err is not None:
             return err
@@ -552,6 +568,28 @@ class CreateSymbol(APIView):
             return err
 
         return response_creator(data=symbol_serialized, status_code=201)
+
+
+#_________________________________TETHERTOMAN__________________________
+
+class UpdateTetherToman(APIView):
+    permission_classes = (permissions.IsAuthenticated,IsSuperUser)
+    authentication_classes = (TokenAuthentication,)
+
+    def patch(self, request):
+        price = request.data.get("price")
+        tethertoman_obj, err = repo.admins.get_tethertoman_obj()
+        if err is not None:
+            return err
+
+        tethertoman_serialized, err = repo.admins.update_tethertoman(
+            tethertoman_obj,
+            price=price
+        )
+        if err is not None:
+            return err
+
+        return response_creator(data=tethertoman_serialized)
 
 
 

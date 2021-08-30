@@ -37,6 +37,8 @@ class TicketRoom(Document):
 
     create_date = fields.FloatField(default=lambda: datetime.timestamp(datetime.now()))
 
+    last_update = fields.FloatField(default=lambda: datetime.timestamp(datetime.now()))
+
     meta = {"ordering": ["-create_date"]}
 
 class TicketText(Document):

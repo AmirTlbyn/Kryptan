@@ -22,6 +22,7 @@ from views.users import (
     ConfirmEmail,
     GetWatchlist,
     Search,
+    GetTetherToman,
 )
 
 urlpatterns = [
@@ -44,4 +45,5 @@ urlpatterns = [
     path("confirm_email",ConfirmEmail.as_view()),
     path("get_watchlist",GetWatchlist.as_view()),
     path("search",Search.as_view()),
+    path("get_tether_toman_price",GetTetherToman.as_view()),
 ]

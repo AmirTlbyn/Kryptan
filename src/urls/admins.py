@@ -19,6 +19,7 @@ from views.admins import (
     SendNotif2Premiums,
     SendNotif2Pros,
     CreateSymbol,
+    UpdateTetherToman,
 )
 
 urlpatterns = [
@@ -38,4 +39,5 @@ urlpatterns = [
     path("send_notif_2_premiums",SendNotif2Premiums.as_view()),
     path("send_notif_2_pros",SendNotif2Pros.as_view()),
     path("create_symbol",CreateSymbol.as_view()),
+    path("update_tether_toman_price",UpdateTetherToman.as_view()),
 ]

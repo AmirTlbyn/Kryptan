@@ -1,6 +1,10 @@
 #Django lib
 from rest_framework.response import Response
 
+#Python libs
+from datetime import date, datetime, timedelta
+from time import mktime
+
 #Internal libs
 from toolkit.toolkit import existence_error, validate_error
 from apps.users.models import (
@@ -28,7 +32,7 @@ def get_plan_object_by_id (plan_id: int) -> (object, Response):
 def get_user_object_by_phone_number(phone_number) -> (object, Response):
     err = None
 
-    user_obj = User.object.filter(phone_number=phone_number).first()
+    user_obj = User.objects.filter(phone_number=phone_number).first()
 
     if user_obj is None:
         err = existence_error("User")
