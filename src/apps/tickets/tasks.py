@@ -6,15 +6,15 @@ from Kryptan.celery import app
 from toolkit.toolkit import response_creator, validate_error
 from apps.tickets.models import TicketText, TicketRoom
 from apps.tickets.serializers import TicketRoomSerializer
-import repositories as repo
+import repositories.tickets as repo_ticket
 
 
 @app.task(bind=True)
 def check_for_ticket_expireness(self, ticket_id):
     print("task is running!")
 
-    ticket_obj, _ = repo.tickets.get_ticket_object_by_id(ticket_id)
-    ticket_serialized = repo.tickets.get_ticket_data_by_obj(ticket_obj)
+    ticket_obj, _ = repo_ticket.get_ticket_object_by_id(ticket_id)
+    ticket_serialized = repo_ticket.get_ticket_data_by_obj(ticket_obj)
 
     check_time = datetime.timestamp(
         datetime.fromtimestamp(ticket_serialized.get("last_update")) + \
@@ -24,7 +24,7 @@ def check_for_ticket_expireness(self, ticket_id):
     if ticket_serialized.get("status") == "a":
         if datetime.timestamp(datetime.now()) > check_time:
 
-            ticket_serialized, err = repo.tickets.update_ticket(
+            ticket_serialized, err = repo_ticket.update_ticket(
                 ticket_obj,
                 data={
                     "status":"e",

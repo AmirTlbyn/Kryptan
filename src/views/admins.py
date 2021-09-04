@@ -37,8 +37,12 @@ from apps.directs.serializers import MessageBoxSerializer,AutomaticMessageSerial
 from repositories.auto_msg import send_message
 from apps.symbols.models import Symbol
 from apps.symbols.serializers import SymbolSerializer
-import repositories as repo
-
+import repositories.users as repo_user
+import repositories.ideas as repo_idea
+import repositories.tickets as repo_ticket
+import repositories.directs as repo_direct
+import repositories.admins as repo_admin
+import repositories.symbols as repo_symbol
 
 #VARIABELS
 PAGE_CAPACITY = 50
@@ -68,7 +72,7 @@ class ChangeRole(APIView):
         role = request.data.get("role")
 
 
-        user_obj, err = repo.users.get_user_object_by_id(user_id)
+        user_obj, err = repo_user.get_user_object_by_id(user_id)
         if err is not None:
             return err
 
@@ -94,7 +98,7 @@ class BanUser(APIView):
         user_id = request.data.get("user_id")
         is_active = request.data.get("is_active")
 
-        user_obj, err = repo.users.get_user_object_by_id(user_id)
+        user_obj, err = repo_user.get_user_object_by_id(user_id)
         if err is not None:
             return err
 
@@ -122,7 +126,7 @@ class ChangePlan(APIView):
         plan_version = request.data.get("plan_version")
         expire_date = request.data.get("expire_date")
 
-        user_obj, err = repo.users.get_user_object_by_id(user_id)
+        user_obj, err = repo_user.get_user_object_by_id(user_id)
         if err is not None:
             return err
 
@@ -173,7 +177,7 @@ class DeleteIdea(APIView):
     def delete(self, request):
          
         idea_id = request.data.get("idea_id")
-        idea_obj, err = repo.ideas.get_idea_object_by_id(idea_id)
+        idea_obj, err = repo_idea.get_idea_object_by_id(idea_id)
         if err is not None:
             return err       
      
@@ -193,7 +197,7 @@ class ChangeHideness(APIView):
         if idea_obj is None:
             return existence_error("Idea")
         
-        idea_serialized, err = repo.ideas.update_idea(
+        idea_serialized, err = repo_idea.update_idea(
             idea_obj,
             data={
                 "is_hide":is_hide,
@@ -252,16 +256,16 @@ class SendText(APIView):
 
     def post(self, request):
         ticket_id = request.data.get("ticket_id")
-        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        ticket_obj, err = repo_ticket.get_ticket_object_by_id(ticket_id)
         if err is not None:
             return err
 
-        ticket_serializer = repo.tickets.get_ticket_data_by_obj(ticket_obj)
+        ticket_serializer = repo_ticket.get_ticket_data_by_obj(ticket_obj)
 
         texts_list = ticket_serializer.get("texts")
 
         if image is not None:
-            image_serialized, err = repo.ideas.create_image_object(
+            image_serialized, err = repo_idea.create_image_object(
                 image=data.get("image"),
                 dir="tickets",
                 prefix_dir=request.user.id,
@@ -270,7 +274,7 @@ class SendText(APIView):
             if err is not None:
                 return err
 
-            text_serialized, err = repo.tickets.create_text_obj(
+            text_serialized, err = repo_ticket.create_text_obj(
                 data={
                     "text":text,
                     "image" : image_serialized.data.get("id"),
@@ -280,7 +284,7 @@ class SendText(APIView):
                 return err
         else:
 
-            text_serialized, err = repo.tickets.create_text_obj(
+            text_serialized, err = repo_ticket.create_text_obj(
                 data={
                     "text":text,
                     "user":request.user.id,
@@ -290,7 +294,7 @@ class SendText(APIView):
 
         texts_list.append(text_serialized.get("id"))
 
-        ticket_serialized, err = repo.tickets.update_ticket(
+        ticket_serialized, err = repo_ticket.update_ticket(
             ticket_obj,
             data={
                 "texts":texts_list,
@@ -309,11 +313,11 @@ class EndTicket(APIView):
     def patch(self, request):
         ticket_id = request.data.get("ticket_id")
 
-        ticket_obj, err = repo.tickets.get_ticket_object_by_id(ticket_id)
+        ticket_obj, err = repo_ticket.get_ticket_object_by_id(ticket_id)
         if err is not None:
             return err
         
-        ticket_serialized, err = repo.tickets.update_ticket(
+        ticket_serialized, err = repo_ticket.update_ticket(
             ticket_obj,
             data={
                 "status":"e",
@@ -333,11 +337,11 @@ class SendBanWarn(APIView):
     def post(self, request):
         user_id = request.data.get("user_id")
 
-        user_obj,err = repo.users.get_user_object_by_id(user_id)
+        user_obj,err = repo_user.get_user_object_by_id(user_id)
         if err is not None:
             return err
 
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
 
         send_message(user_serialized=user_serialized ,ban_bool=True)
 
@@ -352,11 +356,11 @@ class SendNotif(APIView):
         text = request.data.get("text")
         title = request.data.get("title")
 
-        user_obj,err = repo.users.get_user_object_by_id(user_id)
+        user_obj,err = repo_user.get_user_object_by_id(user_id)
         if err is not None:
             return err
 
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
 
         send_message(user_serialized=user_serialized,other=True,title=title,msg_text=text)
 
@@ -370,7 +374,7 @@ class SendNotif2All(APIView):
     def post(self, request):
         text = request.data.get("text")
         title = request.data.get("title")    
-        automatic_message_serialized, err = repo.directs.create_automatic_message_object(
+        automatic_message_serialized, err = repo_direct.create_automatic_message_object(
             data={
                 "title" : title,
                 "text" : text,})
@@ -389,7 +393,7 @@ class SendNotif2All(APIView):
             automsg_list.append(automatic_message_serialized.data.id)
             automsg_unread += 1
 
-            msgbox_serialized, err = repo.directs.update_msgbox(
+            msgbox_serialized, err = repo_direct.update_msgbox(
                 msg_box,
                 data={
                     "automatic_messages": automsg_list,
@@ -398,11 +402,11 @@ class SendNotif2All(APIView):
             if err is not None:
                 return err
 
-            user_obj, err = repo.users.get_user_object_by_id(int(msgbox_serialized.get("user")))
+            user_obj, err = repo_user.get_user_object_by_id(int(msgbox_serialized.get("user")))
             if err is not None:
                 return err
 
-            user_serialized = repo.users.get_user_data_by_obj(user_obj)
+            user_serialized = repo_user.get_user_data_by_obj(user_obj)
             # send push notification
             if user_serialized.get("device_token") is not None:
                 push_notification(
@@ -421,7 +425,7 @@ class SendNotif2Premiums(APIView):
         text = request.data.get("text")
         title = request.data.get("title")
 
-        automatic_message_serialized, err = repo.directs.create_automatic_message_object (
+        automatic_message_serialized, err = repo_direct.create_automatic_message_object (
             data={
                 "title" : title,
                 "text" : text,
@@ -446,7 +450,7 @@ class SendNotif2Premiums(APIView):
             automsg_list.append(automatic_message_serialized.get("id"))
             automsg_unread += 1
 
-            msgbox_serialized, err = repo.directs.update_msgbox(
+            msgbox_serialized, err = repo_direct.update_msgbox(
                 msg_box,
                 data={
                     "automatic_messages": automsg_list,
@@ -456,11 +460,11 @@ class SendNotif2Premiums(APIView):
             if err is not None:
                 return err
 
-            user_obj, err = repo.users.get_user_object_by_id(int(msgbox_serialized.data.get("user")))
+            user_obj, err = repo_user.get_user_object_by_id(int(msgbox_serialized.data.get("user")))
             if err is not None:
                 return err
 
-            user_serialized = repo.users.get_user_data_by_obj(user_obj)
+            user_serialized = repo_user.get_user_data_by_obj(user_obj)
             # send push notification
             if user_serialized.get("device_token") is not None:
                 push_notification(
@@ -479,7 +483,7 @@ class SendNotif2Pros(APIView):
         text = request.data.get("text")
         title = request.data.get("title")
 
-        automatic_message_serialized, err = repo.directs.create_automatic_message_object (
+        automatic_message_serialized, err = repo_direct.create_automatic_message_object (
             data={
                 "title" : title,
                 "text" : text,
@@ -504,7 +508,7 @@ class SendNotif2Pros(APIView):
             automsg_list.append(automatic_message_serialized.get("id"))
             automsg_unread += 1
 
-            msgbox_serialized, err = repo.directs.update_msgbox (
+            msgbox_serialized, err = repo_direct.update_msgbox (
                 msg_box,
                 data={
                     "automatic_messages": automsg_list,
@@ -513,11 +517,11 @@ class SendNotif2Pros(APIView):
             if err is not None:
                 return err
 
-            user_obj, err = repo.users.get_user_object_by_id(int(msgbox_serialized.data.get("user")))
+            user_obj, err = repo_user.get_user_object_by_id(int(msgbox_serialized.data.get("user")))
             if err is not None:
                 return err
 
-            user_serialized = repo.users.get_user_data_by_obj(user_obj)
+            user_serialized = repo_user.get_user_data_by_obj(user_obj)
 
             # send push notification
             if user_serialized.get("device_token") is not None:
@@ -540,7 +544,7 @@ class CreateSymbol(APIView):
     def post(self, request):
         data = deepcopy(request.data)
 
-        logo_40_serialized, err = repo.ideas.create_image_object(
+        logo_40_serialized, err = repo_idea.create_image_object(
             image=data.get("logo_40"),
             dir="symbols",
             prefix_dir=data.get("name"),
@@ -550,7 +554,7 @@ class CreateSymbol(APIView):
         if err is not None:
             return err
         
-        logo_24_serialized, err = repo.ideas.create_image_object(
+        logo_24_serialized, err = repo_idea.create_image_object(
             image=data.get("logo_24"),
             dir="symbols",
             prefix_dir=data.get("name"),
@@ -563,7 +567,7 @@ class CreateSymbol(APIView):
         data["logo_24"] = logo_24_serialized.get("id")
         data["logo_40"] = logo_40_serialized.get("id")
 
-        symbol_serialized, err = repo.symbols.create_symbol_object(data=data)
+        symbol_serialized, err = repo_symbol.create_symbol_object(data=data)
         if err is not None:
             return err
 
@@ -578,11 +582,11 @@ class UpdateTetherToman(APIView):
 
     def patch(self, request):
         price = request.data.get("price")
-        tethertoman_obj, err = repo.admins.get_tethertoman_obj()
+        tethertoman_obj, err = repo_admin.get_tethertoman_obj()
         if err is not None:
             return err
 
-        tethertoman_serialized, err = repo.admins.update_tethertoman(
+        tethertoman_serialized, err = repo_admin.update_tethertoman(
             tethertoman_obj,
             price=price
         )

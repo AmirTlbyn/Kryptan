@@ -27,7 +27,8 @@ from apps.ideas.serializers import (
     TagSerializer,
 )
 from apps.symbols.models import Symbol
-import repositories as repo
+import repositories.ideas as repo_idea
+import repositories.users as repo_user
 
 #VARIABELS
 PAGE_CAPACITY = 20
@@ -52,7 +53,7 @@ class CreatePublicIdea(APIView):
             data.pop("is_hide")
         data["idea_type"] = "2"
 
-        idea_serialized, err = repo.ideas.create_idea_object(data=data)
+        idea_serialized, err = repo_idea.create_idea_object(data=data)
 
         if err is not None:
             return err
@@ -83,7 +84,7 @@ class CreatePrivateIdea(APIView):
 
         data["idea_type"] = "1"
 
-        idea_serialized, err = repo.ideas.create_idea_object(data=data)
+        idea_serialized, err = repo_idea.create_idea_object(data=data)
 
         if err is not None:
             return err
@@ -107,7 +108,7 @@ class DeleteIdea(APIView):
             return t
         
         idea_id = request.data.get("idea_id")
-        idea_obj, err = repo.ideas.get_idea_object_by_id(idea_id)
+        idea_obj, err = repo_idea.get_idea_object_by_id(idea_id)
 
         if err is not None:
             return err
@@ -142,12 +143,12 @@ class SearchByTag(APIView):
 
     def post(self, request):
         page_number = request.data.get("page_number", 0)
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
 
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
         
         tag_id = request.data.get("tag_id")
         
@@ -173,12 +174,12 @@ class SearchBySymbol(APIView):
 
     def post(self, request):
         page_number = request.data.get("page_number", 0)
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
 
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
 
         symbol_id = request.data.get("symbol_id")
 
@@ -207,11 +208,11 @@ class SubmitRate(APIView):
         idea_id = request.data.get("idea_id")
         rate = request.data.get("rate")
 
-        idea_obj, err = repo.ideas.get_idea_object_by_id(idea_id)
+        idea_obj, err = repo_idea.get_idea_object_by_id(idea_id)
         if err is not None:
             return err
         
-        idea_serialized = repo.ideas.get_idea_data_by_obj(idea_obj)
+        idea_serialized = repo_idea.get_idea_data_by_obj(idea_obj)
 
         mid_rate = idea_serialized.get("rate")
         rate_list = idea_serialized.get("rate_list")
@@ -223,14 +224,14 @@ class SubmitRate(APIView):
 
             if request.user.id == r_serialized.data.get("user"):
                 sum_rate = mid_rate * len(rate_list) - r_serialized.data.get("rate")
-                r_serialized, err = repo.ideas.update_rate(r_obj, {"rate":rate})
+                r_serialized, err = repo_idea.update_rate(r_obj, {"rate":rate})
 
                 if err is not None:
                     return err
                 
                 mid_rate = (sum_rate + rate) / len(rate_list)
 
-                idea_serialized, err = repo.ideas.update_idea(
+                idea_serialized, err = repo_idea.update_idea(
                     idea_obj,
                     data={"rate": mid_rate}
                 )
@@ -240,7 +241,7 @@ class SubmitRate(APIView):
                 
                 return response_creator(idea_serialized)
 
-        rate_serialized, err = repo.ideas.create_rate_object(
+        rate_serialized, err = repo_idea.create_rate_object(
             data={
                 "user":request.user.id,
                 "rate":rate,
@@ -258,7 +259,7 @@ class SubmitRate(APIView):
             "rate": mid_rate,
         }
 
-        idea_serialized, err= repo.ideas.update_idea(idea_obj, exp_data)
+        idea_serialized, err= repo_idea.update_idea(idea_obj, exp_data)
 
         if err is not None:
             return err
@@ -271,11 +272,11 @@ class GetAllIdea(APIView):
 
     def get(self, request):
         page_number = request.GET.get("page_number", 0)
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
 
         user_id = request.GET.get("user_id")
 
@@ -301,15 +302,15 @@ class ShowIdea(APIView):
             dt_obj = dt_obj + timedelta(minutes=2)
             t = datetime.timestamp(dt_obj)
             return t
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
     
         idea_id = request.GET.get("idea_id")
 
-        idea_obj, err = repo.ideas.get_idea_object_by_id(idea_id)
+        idea_obj, err = repo_idea.get_idea_object_by_id(idea_id)
         if err is not None:
             return err
 
@@ -334,13 +335,13 @@ class ShowIdea(APIView):
         query &= Q(idea=idea_id)
         query &= Q(ip=request.META.get('REMOTE_ADDR'))
 
-        view_obj, err = repo.ideas.get_view_object_by_query(query)
+        view_obj, err = repo_idea.get_view_object_by_query(query)
 
         if err is None:
-            view_serialized = repo.ideas.get_view_data_by_obj(view_obj)
+            view_serialized = repo_idea.get_view_data_by_obj(view_obj)
             if datetime.timestamp(datetime.now()) >= get_2_mins_later(view_serialized.get("last_view")):
                 views += 1
-                view_serialized, err = repo.ideas.update_view(
+                view_serialized, err = repo_idea.update_view(
                     view_obj,
                     data={
                         "last_view": datetime.timestamp(datetime.now()),
@@ -348,7 +349,7 @@ class ShowIdea(APIView):
                 if err is not None:
                     return err
         else:
-            view_serialized, err = repo.ideas.create_view_object(
+            view_serialized, err = repo_idea.create_view_object(
                 data={
                     "user":request.user.id,
                     "idea":idea_id,
@@ -360,7 +361,7 @@ class ShowIdea(APIView):
                 return err
             views += 1
 
-        idea_serialized, err = repo.ideas.update_idea(
+        idea_serialized, err = repo_idea.update_idea(
             idea_obj,
             data={
                 "views":views,
@@ -375,11 +376,11 @@ class FeedIdeas(APIView):
 
     def get(self, request):
         page_number = request.GET.get("page_number", 0)
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
 
         following_list = user_serialized.get("followings")
         if user_serialized.get("plan") is None:
@@ -394,11 +395,11 @@ class NewestIdeas(APIView):
 
     def get(self, request):
         page_number = request.GET.get("page_number", 0)
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
         if user_serialized.get("plan") is None:
             idea_objs = Idea.objects.filter(idea_type="2",is_hide=False).order_by('create_date')[page_number*PAGE_CAPACITY:(page_number+1)*PAGE_CAPACITY]
         else:
@@ -416,7 +417,7 @@ class ChangeEditorsPick(APIView):
         idea_id = request.data.get("idea_id")
         pick = request.data.get("pick")
 
-        idea_obj, err = repo.ideas.get_idea_object_by_id(idea_id)
+        idea_obj, err = repo_idea.get_idea_object_by_id(idea_id)
         if err is not None:
             return err
         
@@ -431,7 +432,7 @@ class ChangeEditorsPick(APIView):
                 "pick_date": 0
             }
         
-        idea_serialized, err = repo.ideas.update_idea(idea_obj, data=data)
+        idea_serialized, err = repo_idea.update_idea(idea_obj, data=data)
         if err is not None:
             return err
 
@@ -443,11 +444,11 @@ class GetEditorsPickIdeas(APIView):
 
     def get(self, request):
         page_number = request.GET.get("page_number", 0)
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
         if user_serialized.get("plan") is None:
             ideas_objs = Idea.objects.filter(is_editor_pick=True,idea_type="2",is_hide=False).order_by('pick_date')[page_number*PAGE_CAPACITY:(page_number+1)*PAGE_CAPACITY]
         else:
@@ -465,11 +466,11 @@ class GetTopIdeas(APIView):
 
     def get(self, request):
         page_number = request.GET.get("page_number", 0)
-        user_obj, err = repo.users.get_user_object_by_id(request.user.id)
+        user_obj, err = repo_user.get_user_object_by_id(request.user.id)
         if err is not None:
             return err
         
-        user_serialized = repo.users.get_user_data_by_obj(user_obj)
+        user_serialized = repo_user.get_user_data_by_obj(user_obj)
         if user_serialized.get("plan") is None:
             idea_objs = Idea.objects.filter(idea_type="2",is_hide=False).order_by('views')[page_number*PAGE_CAPACITY:(page_number+1)*PAGE_CAPACITY]
         else:
@@ -489,7 +490,7 @@ class SaveScreenshot(APIView):
 
         data["user"]=request.user.id
 
-        screenshot_serialized, err = repo.ideas.create_screenshot_obj(data)
+        screenshot_serialized, err = repo_idea.create_screenshot_obj(data)
         if err is not None:
             return err
 
@@ -502,10 +503,10 @@ class ShowScreenshot(APIView):
     def get(self, request):
         screenshot_id = int(request.GET.get("screenshot_id"))
 
-        screenshot_obj, err = repo.ideas.get_screenshot_object_by_id(screenshot_id)
+        screenshot_obj, err = repo_idea.get_screenshot_object_by_id(screenshot_id)
         if err is not None:
             return err
-        screenshot_serialized = repo.ideas.get_screenshot_data_by_object(screenshot_obj)
+        screenshot_serialized = repo_idea.get_screenshot_data_by_object(screenshot_obj)
 
         return response_creator(data=screenshot_serialized)
 
@@ -516,10 +517,10 @@ class DeleteScreenshot(APIView):
     def delete(self, request):
         screenshot_id = int(request.data.get("screenshot_id"))
 
-        screenshot_obj, err = repo.ideas.get_screenshot_object_by_id(screenshot_id)
+        screenshot_obj, err = repo_idea.get_screenshot_object_by_id(screenshot_id)
         if err is not None:
             return err
-        screenshot_serialized = repo.ideas.get_screenshot_data_by_object(screenshot_obj)
+        screenshot_serialized = repo_idea.get_screenshot_data_by_object(screenshot_obj)
 
 
         if screenshot_serialized.get("user") != request.user.id:

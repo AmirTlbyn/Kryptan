@@ -131,7 +131,7 @@ class User(Document):
         #create referral
         refer = str(uuid.uuid4())[:5]
 
-        user = cls(phone_number=phone_number, joined_date=now, role=role,username=username,referral=refer)
+        user = cls(phone_number=phone_number, joined_date=now,username=username,referral=refer)
 
         user.set_password(password)
         user.save()
@@ -146,6 +146,15 @@ class User(Document):
         wallet.save()
 
         
+
+        return user
+
+    def create_superuser(self, password, phone_number, username):
+
+        user = self.create_user(password, phone_number, username)
+
+        user.is_superuser = True
+        user.save()
 
         return user
 

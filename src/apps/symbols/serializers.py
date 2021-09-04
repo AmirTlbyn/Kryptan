@@ -2,7 +2,7 @@
 from rest_framework_mongoengine.serializers import DocumentSerializer
 
 #Internal lib
-from apps.symbols.models import Symbol
+from apps.symbols.models import Symbol, SymbolQuote
 
 class SymbolSerializer(DocumentSerializer):
 
@@ -30,3 +30,10 @@ class SymbolDeepSerializer(DocumentSerializer):
         model = Symbol
         fields = "__all__"
         depth = 1
+
+class SymbolQuoteSerializer (DocumentSerializer):
+
+    class Meta:
+        model = SymbolQuote
+        fields = "__all__"
+        depth = 0

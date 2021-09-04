@@ -166,5 +166,22 @@ def update_msgbox (msgbox_obj, data) -> (dict, Response):
 
     return msgbox_serialized.data , err
 
+def update_message (msg_obj, data) -> (dict, Response):
+    err = None
+
+    msg_serialized = MessageBoxSerializer(
+        msg_obj,
+        data=data,
+        partial=True
+    )
+    
+    if not msg_serialized.is_valid():
+        err = validate_error(msg_serialized)
+        return {}, err
+
+    msg_serialized.save()
+
+    return msg_serialized.data, err
+
 
 
